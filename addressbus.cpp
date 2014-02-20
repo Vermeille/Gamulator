@@ -20,7 +20,7 @@
 
 void AddressBus::Set(uint16_t index, byte val)
 {
-    switch (val & 0xF000)
+    switch (index & 0xF000)
     {
         case 0x0000:
         case 0x1000:

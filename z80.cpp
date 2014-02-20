@@ -391,3 +391,22 @@ void Z80::set_interrupts(byte enable)
 {
     _interrupts = enable;
 }
+
+void Z80::Dump() const
+{
+    std::cout << std::hex
+        << "A = 0x" << (int)Register<A>::Get(this) << "\n"
+        << "B = 0x" << (int)Register<B>::Get(this) << "\n"
+        << "C = 0x" << (int)Register<C>::Get(this) << "\n"
+        << "D = 0x" << (int)Register<D>::Get(this) << "\n"
+        << "E = 0x" << (int)Register<E>::Get(this) << "\n"
+        << "F = 0x" << (int)Register<F>::Get(this) << "\n"
+        << "H = 0x" << (int)Register<H>::Get(this) << "\n"
+        << "L = 0x" << (int)Register<L>::Get(this) << "\n"
+        << "AF = 0x" << Register<AF>::Get(this) << "\n"
+        << "BC = 0x" << Register<BC>::Get(this) << "\n"
+        << "DE = 0x" << Register<DE>::Get(this) << "\n"
+        << "HL = 0x" << Register<HL>::Get(this) << "\n"
+        << "SP = 0x" << Register<SP>::Get(this) << "\n"
+        << "PC = 0x" << Register<PC>::Get(this) << "\n" ;
+}

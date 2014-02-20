@@ -8,6 +8,7 @@
 ** Last update ven. 04 mai 2012 10:45:39 CEST Guillaume "Vermeille" Sanchez
 */
 
+#include <stdexcept>
 #include <stdio.h>
 #include <stdlib.h>
 

@@ -179,7 +179,7 @@
     RegisterOpcode<0x73, Instr<LD, ToAddr<Register<HL>>, Register<E>>>();
     RegisterOpcode<0x74, Instr<LD, ToAddr<Register<HL>>, Register<H>>>();
     RegisterOpcode<0x75, Instr<LD, ToAddr<Register<HL>>, Register<L>>>();
-    //RegisterOpcode<0x76, Instr<HALT, void, void>>();
+    RegisterOpcode<0x76, Instr<HALT, void, void>>();
     RegisterOpcode<0x77, Instr<LD, ToAddr<Register<HL>>, Register<A>>>();
     RegisterOpcode<0x78, Instr<LD, Register<A>, Register<B>>>();
     RegisterOpcode<0x79, Instr<LD, Register<A>, Register<C>>>();
@@ -278,7 +278,7 @@
     RegisterOpcode<0xD6, Instr<SUB, Register<A>, NextByte>>();
     RegisterOpcode<0xD7, Instr<RST10, void, void>>();
     RegisterOpcode<0xD8, Instr<RETC, void, void>>();
-    RegisterOpcode<0xD9, Instr<RET, void, void>>(); // FIXME
+    RegisterOpcode<0xD9, Instr<RETI, void, void>>();
     RegisterOpcode<0xDA, Instr<JPC, NextWord, void>>();
     // 0xDB xxxxxxxxxxxxxxxxxxxxxxxxx
     RegisterOpcode<0xDC, Instr<CALLC, NextWord, void>>();
@@ -350,7 +350,7 @@ void Z80::RegisterOpcode()
     _print[Opcode] = std::function<void(int&, AddressBus&)>(&Inst::Print);
 }
 
-void Z80::set_interrupts(bool enable)
+void Z80::set_interrupts(byte enable)
 {
     _interrupts = enable;
 }

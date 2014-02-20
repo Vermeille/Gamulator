@@ -42,6 +42,21 @@ struct NextByte
 template <class Addr>
 struct ToAddr
 {
+    static inline word GetW(Z80* p)
+    {
+        word val = (p->_addr.Get(Addr::Get(p)) << 8)
+            + p->_addr.Get(Addr::Get(p) + 1);
+        std::cout << std::hex << "read word " << val << " at " << Addr::Get(p) << std::endl;
+        return val;
+    }
+
+    static inline void SetW(Z80* p, word val)
+    {
+        p->_addr.Set(Addr::Get(p), val >> 8);
+        p->_addr.Set(Addr::Get(p) + 1, val & 0xFF);
+        std::cout << std::hex << "set word " << val << " at " << Addr::Get(p) << std::endl;
+    }
+
     static inline byte Get(Z80* p)
     {
         return p->_addr.Get(Addr::Get(p));
@@ -208,48 +223,6 @@ struct CCF
         std::cout << std::endl;
     }
 };
-
-template <int Addr, class, class>
-struct RST_Impl
-{
-    static void Do(Z80*p)
-    {
-        Z80::Register<Z80::SP>::Set(p,
-                Z80::Register<Z80::SP>::Get(p) - 2);
-        ToAddr<Z80::Register<Z80::SP>>::Set(p,
-                Z80::Register<Z80::PC>::Get(p));
-        Z80::Register<Z80::PC>::Set(p, Addr-1);
-    }
-    static void Print(int&, AddressBus&)
-    {
-        std::cout << "rst 0x" << std::hex << Addr;
-        std::cout << std::endl;
-    }
-};
-
-template <class A, class B>
-using RST0 = RST_Impl<0x0, A, B>;
-
-template <class A, class B>
-using RST8 = RST_Impl<0x8, A, B>;
-
-template <class A, class B>
-using RST10 = RST_Impl<0x10, A, B>;
-
-template <class A, class B>
-using RST18 = RST_Impl<0x18, A, B>;
-
-template <class A, class B>
-using RST20 = RST_Impl<0x20, A, B>;
-
-template <class A, class B>
-using RST28 = RST_Impl<0x28, A, B>;
-
-template <class A, class B>
-using RST30 = RST_Impl<0x30, A, B>;
-
-template <class A, class B>
-using RST38 = RST_Impl<0x38, A, B>;
 
 template <class Val, class Garbage>
 struct INC
@@ -593,8 +566,7 @@ struct RET_Impl
     {
         if (Test::Do(p))
         {
-            Z80::Register<Z80::PC>::Set(p,
-                    ToAddr<Z80::Register<Z80::SP>>::Get(p));
+            Z80::Register<Z80::PC>::Set(p, ToAddr<Z80::Register<Z80::SP>>::GetW(p));
             Z80::Register<Z80::SP>::Set(p, Z80::Register<Z80::SP>::Get(p)+2);
         }
     }
@@ -662,11 +634,9 @@ struct CALL_Impl
     {
         if (Test::Do(p))
         {
-            Z80::Register<Z80::SP>::Set(p,
-                    Z80::Register<Z80::SP>::Get(p) - 2);
-            ToAddr<Z80::Register<Z80::SP>>::Set(p,
-                    Z80::Register<Z80::PC>::Get(p));
-            Z80::Register<Z80::PC>::Set(p, A::Get(p)-1);
+            Z80::Register<Z80::SP>::Set(p, Z80::Register<Z80::SP>::Get(p) - 2);
+            ToAddr<Z80::Register<Z80::SP>>::SetW(p, Z80::Register<Z80::PC>::Get(p) + 2);
+            Z80::Register<Z80::PC>::Set(p, A::Get(p) - 1);
         }
     }
     static void Print(int& c, AddressBus& code)
@@ -699,7 +669,7 @@ struct POP
 {
     static void Do(Z80* p)
     {
-        A::Set(p, ToAddr<Z80::Register<Z80::SP>>::Get(p));
+        A::Set(p, ToAddr<Z80::Register<Z80::SP>>::GetW(p));
         Z80::Register<Z80::SP>::Set(p, Z80::Register<Z80::SP>::Get(p)+2);
     }
     static void Print(int& c, AddressBus& code)
@@ -716,7 +686,7 @@ struct PUSH
     static void Do(Z80* p)
     {
         Z80::Register<Z80::SP>::Set(p, Z80::Register<Z80::SP>::Get(p)-2);
-        ToAddr<Z80::Register<Z80::SP>>::Set(p, A::Get(p));
+        ToAddr<Z80::Register<Z80::SP>>::SetW(p, A::Get(p));
     }
     static void Print(int& c, AddressBus& code)
     {
@@ -728,20 +698,6 @@ struct PUSH
 
 template <class, class>
 struct Nop {};
-
-template <class, class>
-struct Stop
-{
-    static inline void Do(Z80*)
-    {
-        while (true)
-            ;
-    }
-    static void Print(int&, AddressBus&)
-    {
-        std::cout << "stop"<< std::endl;
-    }
-};
 
 template <>
 void Z80::Instr<Nop, void, void>::Do(Z80*)
@@ -888,7 +844,7 @@ struct EI
 {
     static inline void Do(Z80* p)
     {
-        p->set_interrupts(true);
+        p->set_interrupts(0xFF);
     }
     static void Print(int&, AddressBus&)
     {
@@ -900,7 +856,7 @@ struct DI
 {
     static inline void Do(Z80* p)
     {
-        p->set_interrupts(false);
+        p->set_interrupts(0);
     }
     static void Print(int&, AddressBus&)
     {
@@ -910,4 +866,102 @@ struct DI
 
 typedef Z80::Instr<Nop, void, void> NOP;
 
+template <class, class>
+struct HALT
+{
+    static inline void Do(Z80* p)
+    {
+        //stupidly loop on the halt / do nothing
+        EI<void, void>::Do(p);
+        if (!p->_addr.Get(0xFF0F))
+            Z80::Register<Z80::PC>::Set(p, Z80::Register<Z80::PC>::Get(p) - 1);
+    }
+    static void Print(int&, AddressBus&)
+    {
+        std::cout << "halt" << std::endl;
+    }
+};
+
+template <int Addr, class, class>
+struct RST_Impl
+{
+    static void Do(Z80*p)
+    {
+        Z80::Register<Z80::SP>::Set(p, Z80::Register<Z80::SP>::Get(p) - 2);
+        ToAddr<Z80::Register<Z80::SP>>::SetW(p, Z80::Register<Z80::PC>::Get(p) + 2);
+        Z80::Register<Z80::PC>::Set(p, Addr - 1);
+        DI<void, void>::Do(p);
+        std::cout << "interrupt caught by " << std::hex << Addr << std::endl;
+    }
+    static void Print(int&, AddressBus&)
+    {
+        std::cout << "rst 0x" << std::hex << Addr << std::endl;
+    }
+};
+
+template <class A, class B>
+using RST0 = RST_Impl<0x0, A, B>;
+
+template <class A, class B>
+using RST8 = RST_Impl<0x8, A, B>;
+
+template <class A, class B>
+using RST10 = RST_Impl<0x10, A, B>;
+
+template <class A, class B>
+using RST18 = RST_Impl<0x18, A, B>;
+
+template <class A, class B>
+using RST20 = RST_Impl<0x20, A, B>;
+
+template <class A, class B>
+using RST28 = RST_Impl<0x28, A, B>;
+
+template <class A, class B>
+using RST30 = RST_Impl<0x30, A, B>;
+
+template <class A, class B>
+using RST38 = RST_Impl<0x38, A, B>;
+
+template <class A, class B>
+using RST40 = RST_Impl<0x40, A, B>;
+
+template <class A, class B>
+using RST48 = RST_Impl<0x48, A, B>;
+
+template <class A, class B>
+using RST50 = RST_Impl<0x50, A, B>;
+
+template <class A, class B>
+using RST58 = RST_Impl<0x58, A, B>;
+
+template <class A, class B>
+using RST60 = RST_Impl<0x60, A, B>;
+
+template <class, class>
+struct RETI
+{
+    static inline void Do(Z80* p)
+    {
+        RET<void, void>::Do(p);
+        EI<void, void>::Do(p);
+    }
+    static void Print(int&, AddressBus&)
+    {
+        std::cout << "reti" << std::endl;
+    }
+};
+
+template <class, class>
+struct Stop
+{
+    static inline void Do(Z80* p)
+    {
+        HALT<void, void>::Do(p);
+    }
+    static void Print(int&, AddressBus&)
+    {
+        std::cout << "stop"<< std::endl;
+    }
+};
 

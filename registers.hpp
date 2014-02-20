@@ -3,7 +3,7 @@
 template <>
 struct Z80::Register<Z80::A>
 {
-    static inline byte Get(Z80* proc)
+    static inline byte Get(const Z80* proc)
     {
         return proc->_regs[7];
     }
@@ -21,7 +21,7 @@ struct Z80::Register<Z80::A>
 template <>
 struct Z80::Register<Z80::B>
 {
-    static inline byte Get(Z80* proc)
+    static inline byte Get(const Z80* proc)
     {
         return proc->_regs[0];
     }
@@ -39,7 +39,7 @@ struct Z80::Register<Z80::B>
 template <>
 struct Z80::Register<Z80::C>
 {
-    static inline byte Get(Z80* proc)
+    static inline byte Get(const Z80* proc)
     {
         return proc->_regs[1];
     }
@@ -57,7 +57,7 @@ struct Z80::Register<Z80::C>
 template <>
 struct Z80::Register<Z80::D>
 {
-    static inline byte Get(Z80* proc)
+    static inline byte Get(const Z80* proc)
     {
         return proc->_regs[2];
     }
@@ -75,7 +75,7 @@ struct Z80::Register<Z80::D>
 template <>
 struct Z80::Register<Z80::E>
 {
-    static inline byte Get(Z80* proc)
+    static inline byte Get(const Z80* proc)
     {
         return proc->_regs[3];
     }
@@ -93,7 +93,7 @@ struct Z80::Register<Z80::E>
 template <>
 struct Z80::Register<Z80::F>
 {
-    static inline byte Get(Z80* proc)
+    static inline byte Get(const Z80* proc)
     {
         return proc->_regs[6];
     }
@@ -111,7 +111,7 @@ struct Z80::Register<Z80::F>
 template <>
 struct Z80::Register<Z80::H>
 {
-    static inline byte Get(Z80* proc)
+    static inline byte Get(const Z80* proc)
     {
         return proc->_regs[4];
     }
@@ -129,7 +129,7 @@ struct Z80::Register<Z80::H>
 template <>
 struct Z80::Register<Z80::L>
 {
-    static inline byte Get(Z80* proc)
+    static inline byte Get(const Z80* proc)
     {
         return proc->_regs[5];
     }
@@ -147,7 +147,7 @@ struct Z80::Register<Z80::L>
 template <>
 struct Z80::Register<Z80::AF>
 {
-    static inline word Get(Z80* proc)
+    static inline word Get(const Z80* proc)
     {
         return (Z80::Register<A>::Get(proc) << 8) + Z80::Register<F>::Get(proc);
     }
@@ -166,7 +166,7 @@ struct Z80::Register<Z80::AF>
 template <>
 struct Z80::Register<Z80::BC>
 {
-    static inline word Get(Z80* proc)
+    static inline word Get(const Z80* proc)
     {
         return (Z80::Register<B>::Get(proc) << 8) + Z80::Register<C>::Get(proc);
     }
@@ -185,7 +185,7 @@ struct Z80::Register<Z80::BC>
 template <>
 struct Z80::Register<Z80::DE>
 {
-    static inline word Get(Z80* proc)
+    static inline word Get(const Z80* proc)
     {
         return (Z80::Register<D>::Get(proc) << 8) + Z80::Register<E>::Get(proc);
     }
@@ -204,7 +204,7 @@ struct Z80::Register<Z80::DE>
 template <>
 struct Z80::Register<Z80::HL>
 {
-    static inline word Get(Z80* proc)
+    static inline word Get(const Z80* proc)
     {
         return (Z80::Register<H>::Get(proc)<<8) + Z80::Register<L>::Get(proc);
     }
@@ -223,7 +223,7 @@ struct Z80::Register<Z80::HL>
 template <>
 struct Z80::Register<Z80::SP>
 {
-    static inline word Get(Z80* proc)
+    static inline word Get(const Z80* proc)
     {
         return proc->_sp;
     }
@@ -241,7 +241,7 @@ struct Z80::Register<Z80::SP>
 template <>
 struct Z80::Register<Z80::PC>
 {
-    static inline word Get(Z80* proc)
+    static inline word Get(const Z80* proc)
     {
         return proc->_pc;
     }

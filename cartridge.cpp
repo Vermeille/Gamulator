@@ -72,4 +72,5 @@ byte Cartridge::Get(word index) const
         return _data[_rom_bank*0x4000+(index-0x4000)];
     else if (index < 0xC000)
         return _ram[_ram_bank*0x2000+(index-0xA000)];
+    throw std::runtime_error("No such address in cartridge");
 }

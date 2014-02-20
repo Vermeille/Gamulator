@@ -38,9 +38,10 @@ class Z80
         enum RegName { A, B, C, D, E, F, H, L, AF, BC, DE, HL, SP, PC };
         template <RegName>
         struct Register;
-        void set_interrupts(bool);
-    private:
+        void set_interrupts(byte);
+        void Dump() const;
 
+    private:
         template <unsigned char Opcode, class Instr>
         void RegisterOpcode();
 
@@ -58,5 +59,5 @@ class Z80
         AddressBus& _addr;
         std::function<void(Z80*)> _instr[256];
         std::function<void(int&, AddressBus&)> _print[256];
-        bool _interrupts;
+        byte _interrupts;
 };

@@ -54,8 +54,12 @@ void AddressBus::Set(uint16_t index, byte val)
             break;
         case 0xF000:
             {
+                if (index == 0xFF0F)
+                    _interrupts = val;
                 if (index >= 0xFF80 && index != 0xFFFF)
                     _hram[index - 0xFF80] = val;
+                if (index == 0xFFFF)
+                    _int_mask = val;
             }
             break;
     }
@@ -71,10 +75,17 @@ byte AddressBus::Get(uint16_t index) const
         return _card.Get(index);
     if (0xC000 <= index && index < 0xE000)
         return _wram0[index - 0xC000];
+    if (index == 0xFF0F)
+    {
+        _interrupts |= GetIntByte();
+        return _interrupts;
+    }
     if (index == 0xff44)
         return _vid.Get(index);
     if (index >= 0xFF80 && index != 0xFFFF)
         return _hram[index - 0xFF80];
+    if (index == 0xFFFF)
+        return _int_mask;
     std::cout << "invalid read at " << std::hex << index << std::endl;
     return 0;
 }

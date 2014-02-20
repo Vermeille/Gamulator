@@ -16,8 +16,11 @@ class AddressBus : public Addressable
         byte Get(uint16_t index) const override;
 
     private:
+        byte GetIntByte() const;
         Cartridge& _card;
         Video& _vid;
         byte _hram[0xFFFF - 0xFF80 + 1];
         byte _wram0[0xE000 - 0xC000];
+        byte _int_mask;
+        mutable byte _interrupts;
 };

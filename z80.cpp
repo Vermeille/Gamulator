@@ -327,6 +327,10 @@ void Z80::Process()
     {
         int c = _pc;
         std::cout << "0x"<< std::hex << _pc << "\t" << static_cast<unsigned int>(_addr.Get(_pc)) << "\t";
+
+        if (_interrupts)
+            ProcessInterrupts();
+
         _print[_addr.Get(_pc)](c, _addr);
         _instr[_addr.Get(_pc)](this);
         ++_pc;
@@ -343,6 +347,37 @@ void Z80::Process()
         } catch (std::exception) { }
     }
 #endif
+}
+
+void Z80::ProcessInterrupts()
+{
+    byte ints = _addr.Get(0xFFFF) & _addr.Get(0xFF0F) & _interrupts;
+
+    if (ints & 1_b)
+    {
+        _addr.Set(0xFF0F, ints & ~1);
+        RST40<void, void>::Do(this);
+    }
+    else if (ints & 10_b)
+    {
+        _addr.Set(0xFF0F, ints & ~10_b);
+        RST48<void, void>::Do(this);
+    }
+    else if (ints & 100_b)
+    {
+        _addr.Set(0xFF0F, ints & ~100_b);
+        RST50<void, void>::Do(this);
+    }
+    else if (ints & 1000_b)
+    {
+        _addr.Set(0xFF0F, ints & ~1000_b);
+        RST58<void, void>::Do(this);
+    }
+    else if (ints & 10000_b)
+    {
+        _addr.Set(0xFF0F, ints & ~100000_b);
+        RST60<void, void>::Do(this);
+    }
 }
 
     template <unsigned char Opcode, class Inst>

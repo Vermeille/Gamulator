@@ -45,6 +45,7 @@ class Z80
     private:
         template <unsigned char Opcode, class Instr>
         void RegisterOpcode();
+        void ProcessInterrupts();
 
         friend struct NextWord;
         friend struct NextByte;

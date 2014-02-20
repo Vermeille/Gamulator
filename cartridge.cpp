@@ -5,16 +5,17 @@
  ** Login   sanche_g <Guillaume.V.Sanchez@gmail.com>
  **
  ** Started on  lun. 30 avril 2012 03:32:13 CEST Guillaume "Vermeille" Sanchez
- ** Last update lun. 30 avril 2012 14:34:42 CEST Guillaume "Vermeille" Sanchez
+ ** Last update 2014-02-20 16:22 vermeille
  */
 
+#include <stdexcept>
 #include <iostream>
 
 #include "cartridge.h"
 #include "z80.h"
 
     Cartridge::Cartridge(std::string filename)
-: _rom_bank(1), _ram_bank(0)
+: _ram(0x2000, 0), _rom_bank(1), _ram_bank(0)
 {
     std::ifstream file(filename, std::ios::in | std::ios::binary);
     while (file.good())

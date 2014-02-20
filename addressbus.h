@@ -18,4 +18,6 @@ class AddressBus : public Addressable
     private:
         Cartridge& _card;
         Video& _vid;
+        byte _hram[0xFFFF - 0xFF80 + 1];
+        byte _wram0[0xE000 - 0xC000];
 };

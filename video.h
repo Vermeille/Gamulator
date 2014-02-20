@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 class Video
 {
     public:
@@ -47,13 +49,22 @@ class Video
         byte lcdc_y_coordinate();
 
         int mode();
+
+        void Set(uint16_t idx, byte val);
+        byte Get(uint16_t idx) const;
+
+        void Clock();
+
     private:
         void SetCtrlBit(int b, bool val);
         bool GetCtrlBit(int b);
 
         void SetStateBit(int b, bool val);
         bool GetStateBit(int b);
+        int _clock = 0;
+        int _line = 0;
         byte _ctrl;
         byte _state;
         byte _y_coord;
+        byte _vram[0xA000 - 0x8000];
 };

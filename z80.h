@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <functional>
 #include "addressbus.h"
+#include "video.h"
 
 typedef unsigned char byte;
 typedef uint16_t word;
@@ -16,7 +17,7 @@ constexpr int operator "" _b(unsigned long long int N)
 class Z80
 {
     public:
-        Z80(AddressBus& addr);
+        Z80(AddressBus& addr, Video& v);
 
         void Process();
 
@@ -52,11 +53,15 @@ class Z80
         template <class>
             friend struct ToAddrFF00;
 
+        template <class,class>
+            friend struct HALT;
+
         byte _regs[8];
         byte _flags;
         word _sp;
         word _pc;
         AddressBus& _addr;
+        Video& _vid;
         std::function<void(Z80*)> _instr[256];
         std::function<void(int&, AddressBus&)> _print[256];
         byte _interrupts;

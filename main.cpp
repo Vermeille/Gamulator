@@ -20,9 +20,10 @@ int main(int argc, char** argv)
     if (argc <= 1)
         return EXIT_FAILURE;
 
+    Video v;
     Cartridge card(argv[1]);
-    AddressBus addrbus(card);
-    Z80 processor(addrbus);
+    AddressBus addrbus(card, v);
+    Z80 processor(addrbus, v);
     processor.Process();
     return 0;
 }

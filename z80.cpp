@@ -5,20 +5,21 @@
  ** Login   sanche_g <Guillaume.V.Sanchez@gmail.com>
  **
  ** Started on  mer. 25 avril 2012 13:59:09 CEST Guillaume "Vermeille" Sanchez
- ** Last update ven. 04 mai 2012 10:52:32 CEST Guillaume "Vermeille" Sanchez
+ ** Last update 2014-02-20 17:36 vermeille
  */
 
 
 #include "z80.h"
 
+#include <iomanip>
 #include <iostream>
 #include <tuple>
 #include <vector>
 
 #include "instruction.hpp"
 
-    Z80::Z80(AddressBus& addr)
-: _sp(0xFFFE), _pc(0x100), _addr(addr)
+    Z80::Z80(AddressBus& addr, Video& v)
+: _sp(0xFFFE), _pc(0x100), _addr(addr), _vid(v), _interrupts(0xFF)
 {
     Register<F>::Set(this, 0xB0);
     Register<A>::Set(this, 0x01);
@@ -329,14 +330,15 @@ void Z80::Process()
         _print[_addr.Get(_pc)](c, _addr);
         _instr[_addr.Get(_pc)](this);
         ++_pc;
-        std::cin.get();
+        //std::cin.get();
+        _vid.Clock();
     }
 #else
     for (int i = 0 ; i < 65535 ; ++i)
     {
         try
         {
-        std::cout <<std::hex << i << "/" <<std::dec<< i << "\t" << static_cast<unsigned int>(_addr.Get(i)) << "\t";
+        std::cout <<std::hex << "0x" << i << "/" <<std::dec<< i << "\t" << static_cast<unsigned int>(_addr.Get(i)) << "\t";
         _print[_addr.Get(i)](i, _addr);
         } catch (std::exception) { }
     }

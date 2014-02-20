@@ -14,8 +14,8 @@
 #include "addressbus.h"
 #include "z80.h"
 
-    AddressBus::AddressBus(Cartridge& card)
-: _card(card)
+    AddressBus::AddressBus(Cartridge& card, Video& v)
+: _card(card), _vid(v)
 {
 }
 
@@ -35,7 +35,7 @@ void AddressBus::Set(uint16_t index, byte val)
             break;
         case 0x8000:
         case 0x9000:
-            // VRAM
+            _vid.Set(index, val);
             break;
         case 0xA000:
         case 0xB000:
@@ -56,7 +56,11 @@ void AddressBus::Set(uint16_t index, byte val)
 
 byte AddressBus::Get(uint16_t index) const
 {
-    if (index <= 0x7FFF)
+    if (index < 0x8000)
+        return _card.Get(index);
+    if (0x8000 <= index && index < 0xA000)
+        return _vid.Get(index);
+    if (0xA000 <= index && index < 0xC000)
         return _card.Get(index);
 }
 

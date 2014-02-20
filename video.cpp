@@ -5,12 +5,14 @@
 ** Login   sanche_g <Guillaume.V.Sanchez@gmail.com>
 **
 ** Started on  mar. 24 avril 2012 13:39:35 CEST Guillaume "Vermeille" Sanchez
-** Last update ven. 04 mai 2012 10:45:39 CEST Guillaume "Vermeille" Sanchez
+** Last update 2014-02-20 17:50 vermeille
 */
 
 #include <stdexcept>
 #include <stdio.h>
 #include <stdlib.h>
+#include <iostream>
+#include <boost/format.hpp>
 
 #include "video.h"
 
@@ -135,6 +137,7 @@ bool Video::oam_interrupt()
 
 void Video::set_vblank(bool b)
 {
+    std::cout << "vblank interrupt " << b << std::endl;
     SetStateBit(4, b);
 }
 
@@ -179,6 +182,71 @@ bool Video::GetStateBit(int b)
 unsigned char Video::lcdc_y_coordinate()
 {
     return _y_coord;
+}
+
+void Video::Set(uint16_t idx, byte val)
+{
+    if (0x8000 <= idx && idx < 0xA000)
+    {
+        _vram[idx - 0x8000] = val;
+        return;
+    }
+    throw std::runtime_error(boost::str(
+                boost::format("invalid access in VRAM at %x") % idx));
+}
+
+Video::byte Video::Get(uint16_t idx) const
+{
+    if (0x8000 <= idx && idx < 0xA000)
+        return _vram[idx - 0x8000];
+    switch (idx)
+    {
+        case 0xFF44:
+            std::cout << "_line = " << _line << std::endl;
+            return _line;
+    }
+    throw std::runtime_error("invalid memory access in VRAM");
+}
+
+void Video::Clock()
+{
+    ++_clock;
+    char mode = _state & 0x3;
+
+    if (mode == 2 && _clock == 80)
+    {
+        _clock = 0;
+        _state &= ~3;
+        _state |= 3;
+    }
+    else if (mode == 3 && _clock == 172)
+    {
+        _clock = 0;
+        _state &= ~3;
+    }
+    else if (mode == 0 && _clock == 204)
+    {
+        _clock = 0;
+        _state &= ~3;
+        ++_line;
+        if (_line == 145)
+        {
+            _state |= 1;
+            set_vblank(true);
+        }
+        else
+        {
+            _state |= 2;
+        }
+    }
+    else if (mode == 1 && _clock == 4560)
+    {
+        set_vblank(false);
+        _line = 0;
+        _clock = 0;
+        _state &= ~3;
+        _state |= 2;
+    }
 }
 
 void Video::Process()

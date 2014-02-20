@@ -1,5 +1,6 @@
 #pragma once
 
+#include "video.h"
 #include "addressable.h"
 #include "cartridge.h"
 
@@ -8,7 +9,7 @@ class AddressBus : public Addressable
     public:
         typedef AddressBus::byte byte;
 
-        AddressBus(Cartridge& card);
+        AddressBus(Cartridge& card, Video& v);
 
         void Set(uint16_t index, byte val) override;
 
@@ -16,4 +17,5 @@ class AddressBus : public Addressable
 
     private:
         Cartridge& _card;
+        Video& _vid;
 };

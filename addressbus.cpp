@@ -8,89 +8,131 @@
  ** Last update mer. 02 mai 2012 13:14:28 CEST Guillaume "Vermeille" Sanchez
  */
 
-#include <stdexcept>
 #include <iostream>
+#include <stdexcept>
 
 #include "addressbus.h"
+#include "utils.h"
 #include "z80.h"
 
-    AddressBus::AddressBus(Cartridge& card, Video& v)
-: _card(card), _vid(v)
-{
-}
-
-void AddressBus::Set(uint16_t index, byte val)
-{
-    switch (index & 0xF000)
-    {
-        case 0x0000:
-        case 0x1000:
-        case 0x2000:
-        case 0x3000:
-        case 0x4000:
-        case 0x5000:
-        case 0x6000:
-        case 0x7000:
-            _card.Set(index, val);
-            break;
-        case 0x8000:
-        case 0x9000:
-            _vid.Set(index, val);
-            break;
-        case 0xA000:
-        case 0xB000:
-            _card.Set(index, val);
-            break;
-        case 0xC000:
-            // WRAM Bank 0
-            _wram0[index - 0xC000] = val;
-            break;
-        case 0xD000:
-            _wram0[index - 0xC000] = val;
-            // WRAM Bank 1 - N
-            break;
-        case 0xE000:
-            // Mirror
-            break;
-        case 0xF000:
-            {
-                if (index == 0xFF0F)
-                    _interrupts = val;
-                if (index >= 0xFF80 && index != 0xFFFF)
-                    _hram[index - 0xFF80] = val;
-                if (index == 0xFFFF)
-                    _int_mask = val;
-            }
-            break;
-    }
-}
-
-byte AddressBus::Get(uint16_t index) const
-{
-    if (index < 0x8000)
-        return _card.Get(index);
-    if (0x8000 <= index && index < 0xA000)
-        return _vid.Get(index);
-    if (0xA000 <= index && index < 0xC000)
-        return _card.Get(index);
-    if (0xC000 <= index && index < 0xE000)
-        return _wram0[index - 0xC000];
-    if (index == 0xFF0F)
-    {
-        _interrupts |= GetIntByte();
-        return _interrupts;
-    }
-    if (index == 0xff44)
-        return _vid.Get(index);
-    if (index >= 0xFF80 && index != 0xFFFF)
-        return _hram[index - 0xFF80];
-    if (index == 0xFFFF)
-        return _int_mask;
-    std::cout << "invalid read at " << std::hex << index << std::endl;
+byte NotImplementedGet(uint16_t idx) {
+    std::cout << "/!\\ " << std::hex << idx << " is not implemented yet\n";
     return 0;
 }
 
-byte AddressBus::GetIntByte() const
-{
-    return (_vid.vblank() ? 1 : 0);
+void NotImplementedSet(uint16_t idx, byte) {
+    std::cout << "/!\\ " << std::hex << idx << " is not implemented yet\n";
 }
+
+AddressBus::AddressBus(Cartridge& card, Video& v) : _card(card), _vid(v) {
+    using namespace std::placeholders;
+    _mem_map = {
+        {"interrupt_vector",
+         0x0000,
+         0x00FF,
+         NotImplementedGet,
+         NotImplementedSet},
+        {"cartridge_header",
+         0x0100,
+         0x014F,
+         std::bind(&Cartridge::Get, &_card, _1),
+         std::bind(&Cartridge::Set, &_card, _1, _2)},
+        {"cartridge_rom_bank_0",
+         0x0150,
+         0x3FFF,
+         std::bind(&Cartridge::Get, &_card, _1),
+         std::bind(&Cartridge::Set, &_card, _1, _2)},
+        {"cartridge_rom_bank_switchable",
+         0x4000,
+         0x7FFF,
+         std::bind(&Cartridge::Get, &_card, _1),
+         std::bind(&Cartridge::Set, &_card, _1, _2)},
+        {"vram",
+         0x8000,
+         0x97FF,
+         std::bind(&Video::Get, &_vid, _1),
+         std::bind(&Video::Set, &_vid, _1, _2)},
+        {"vram_bg1",
+         0x9800,
+         0x9BFF,
+         std::bind(&Video::Get, &_vid, _1),
+         std::bind(&Video::Set, &_vid, _1, _2)},
+        {"vram_bg2",
+         0x9C00,
+         0x9FFF,
+         std::bind(&Video::Get, &_vid, _1),
+         std::bind(&Video::Set, &_vid, _1, _2)},
+        {"cartridge_ram",
+         0xA000,
+         0xBFFF,
+         std::bind(&Cartridge::Get, &_card, _1),
+         std::bind(&Cartridge::Set, &_card, _1, _2)},
+        {"internal_ram_bank0",
+         0xC000,
+         0xCFFF,
+         [&](uint16_t index) { return _wram0[index - 0xC000]; },
+         [&](uint16_t index, byte v) { _wram0[index - 0xC000] = v; }},
+        {"internal_ram_bank1",
+         0xD000,
+         0xDFFF,
+         [&](uint16_t index) { return _wram0[index - 0xC000]; },
+         [&](uint16_t index, byte v) { _wram0[index - 0xC000] = v; }},
+        {"echo_ram", 0xE000, 0xFDFF, NotImplementedGet, NotImplementedSet},
+        {"oam", 0xFE00, 0xFE9F, NotImplementedGet, NotImplementedSet},
+        {"unusable", 0xFEA0, 0xFEFF, NotImplementedGet, NotImplementedSet},
+        {"io_ports", 0xFF00, 0xFF0E, NotImplementedGet, NotImplementedSet},
+        {"int_flag",
+         0xFF0F,
+         0xFF0F,
+         [&](uint16_t) { return _interrupts; },
+         [&](uint16_t, byte v) { _interrupts = v; }},
+        {"io_ports", 0xFF10, 0xFF7F, NotImplementedGet, NotImplementedSet},
+        {"hram",
+         0xFF80,
+         0xFFFE,
+         [&](uint16_t index) { return _hram[index - 0xFF80]; },
+         [&](uint16_t index, byte v) { _hram[index - 0xFF80] = v; }},
+        {"interrupt_master_enable",
+         0xFFFF,
+         0xFFFF,
+         [&](uint16_t) { return _int_mask; },
+         [&](uint16_t, byte v) { _int_mask = v; }},
+        {"unmapped", 0x10000, 0x1FFFF, NotImplementedGet, NotImplementedSet}};
+}
+
+const AddressBus::Addr& AddressBus::FindAddr(uint16_t addr) const {
+    int b = 0;
+    int e = _mem_map.size() - 1;
+
+    while (true) {
+        if (b == e) {
+            return _mem_map.back();
+        }
+
+        int m = (b + e) / 2;
+
+        if (_mem_map[m]._begin <= addr && addr <= _mem_map[m]._end) {
+            return _mem_map[m];
+        }
+
+        if (addr < _mem_map[m]._begin) {
+            e = m;
+        } else {
+            b = m + 1;
+        }
+    }
+}
+
+void AddressBus::Set(uint16_t index, byte val) {
+    return FindAddr(index)._set(index, val);
+}
+
+byte AddressBus::Get(uint16_t index) const {
+    return FindAddr(index)._get(index);
+}
+
+std::string AddressBus::Print(uint16_t index) const {
+    return FindAddr(index)._name;
+}
+
+byte AddressBus::GetIntByte() const { return (_vid.vblank() ? 1 : 0); }

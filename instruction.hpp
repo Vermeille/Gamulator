@@ -35,7 +35,8 @@ struct NextByte
         ++c;
         byte b = code.Get(c);
         std::cout << "0x" << std::hex << static_cast<int>(b)
-            << std::dec << "/" << static_cast<int>(reinterpret_cast<char&>(b));
+            << "/"<< std::dec << static_cast<int>(b) << "u/"
+            << static_cast<int>(reinterpret_cast<char&>(b));
     }
 };
 
@@ -44,27 +45,37 @@ struct ToAddr
 {
     static inline word GetW(Z80* p)
     {
-        word val = (p->_addr.Get(Addr::Get(p)) << 8)
-            + p->_addr.Get(Addr::Get(p) + 1);
-        std::cout << std::hex << "read word " << val << " at " << Addr::Get(p) << std::endl;
+        auto addr = Addr::Get(p);
+        word val = (p->_addr.Get(addr + 1) << 8) + p->_addr.Get(addr);
+        std::cout << std::hex << "read word " << val << " at " << addr
+            << "(" << p->_addr.Print(addr) << ")" << std::endl;
         return val;
     }
 
     static inline void SetW(Z80* p, word val)
     {
-        p->_addr.Set(Addr::Get(p), val >> 8);
-        p->_addr.Set(Addr::Get(p) + 1, val & 0xFF);
-        std::cout << std::hex << "set word " << val << " at " << Addr::Get(p) << std::endl;
+        auto addr = Addr::Get(p);
+        p->_addr.Set(addr, val & 0xFF);
+        p->_addr.Set(addr + 1, val >> 8);
+        std::cout << std::hex << "set word " << val << " at " << addr
+            << "(" << p->_addr.Print(addr) << ")" << std::endl;
     }
 
     static inline byte Get(Z80* p)
     {
-        return p->_addr.Get(Addr::Get(p));
+        auto addr = Addr::Get(p);
+        auto b = p->_addr.Get(addr);
+        std::cout << std::hex << "read byte " << b << " at " << addr << "("
+            << p->_addr.Print(addr) << ")" << std::endl;
+        return b;
     }
 
     static inline void Set(Z80* p, byte val)
     {
-        p->_addr.Set(Addr::Get(p), val);
+        auto addr = Addr::Get(p);
+        p->_addr.Set(addr, val);
+        std::cout << std::hex << "set byte " << val << " at " << addr << "("
+            << p->_addr.Print(addr) << ")" << std::endl;
     }
 
     static void Print(int& c, AddressBus& code)
@@ -81,13 +92,22 @@ struct ToAddrFF00
     static inline byte Get(Z80* p)
     {
         byte offset = Addr::Get(p);
-        return p->_addr.Get(0xFF00+reinterpret_cast<unsigned char&>(offset));
+        auto addr = 0xFF00 + reinterpret_cast<unsigned char&>(offset);
+        auto b = p->_addr.Get(addr);
+
+        std::cout << std::hex << "  read byte " << int(b) << " at " << (addr)
+            << "(" << p->_addr.Print(addr) << ")" << std::endl;
+
+        return b;
     }
 
     static inline void Set(Z80* p, byte val)
     {
         byte offset = Addr::Get(p);
-        p->_addr.Set(0xFF00+reinterpret_cast<unsigned char&>(offset), val);
+        auto addr = 0xFF00 + reinterpret_cast<unsigned char&>(offset);
+        p->_addr.Set(addr, val);
+        std::cout << std::hex << "  set byte " << int(val) << " at " << (addr)
+            << "(" << p->_addr.Print(addr) << ")" << std::endl;
     }
 
     static void Print(int& c, AddressBus& code)

@@ -1,5 +1,5 @@
 /*
- ** z80.cpp for gameboy
+
  **
  ** Made by Guillaume "Vermeille" Sanchez
  ** Login   sanche_g <Guillaume.V.Sanchez@gmail.com>

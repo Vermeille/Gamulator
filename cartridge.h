@@ -11,6 +11,7 @@ class Cartridge : public Addressable
         Cartridge(std::string filename);
         virtual void Set(word index, byte val) override;
         virtual byte Get(word index) const override;
+        virtual std::string Print(uint16_t index) const override;
 
     private:
         std::vector<byte> _data;

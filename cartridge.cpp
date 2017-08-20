@@ -13,6 +13,7 @@
 
 #include "cartridge.h"
 #include "z80.h"
+#include "utils.h"
 
     Cartridge::Cartridge(std::string filename)
 : _ram(0x2000, 0), _rom_bank(1), _ram_bank(0)
@@ -74,4 +75,21 @@ byte Cartridge::Get(word index) const
     else if (index < 0xC000)
         return _ram[_ram_bank*0x2000+(index-0xA000)];
     throw std::runtime_error("No such address in cartridge");
+}
+
+std::string Cartridge::Print(uint16_t index) const {
+    if (index < 0x100)
+        throw "invalid addr";
+    else if (index < 0x150)
+        return "cartridge_header_area";
+    else if (index < 0x4000)
+        return "cartridge_rom_0";
+    else if (index < 0x8000)
+        return "cartridge_rom_bank_" + std::to_string(_rom_bank);
+    else if (index < 0xA000)
+        throw "not cartridge addr";
+    else if (index < 0xC000)
+        return "cartridge_ram_bank_" + std::to_string(_ram_bank);
+    else
+        throw "not cartridge addr";
 }

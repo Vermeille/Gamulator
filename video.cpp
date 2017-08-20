@@ -184,28 +184,14 @@ unsigned char Video::lcdc_y_coordinate()
     return _y_coord;
 }
 
-void Video::Set(uint16_t idx, byte val)
+Video::byte Video::vram(uint16_t idx) const
 {
-    if (0x8000 <= idx && idx < 0xA000)
-    {
-        _vram[idx - 0x8000] = val;
-        return;
-    }
-    throw std::runtime_error(boost::str(
-                boost::format("invalid access in VRAM at %x") % idx));
+    return _vram[idx - 0x8000];
 }
 
-Video::byte Video::Get(uint16_t idx) const
+void Video::set_vram(uint16_t idx, byte val)
 {
-    if (0x8000 <= idx && idx < 0xA000)
-        return _vram[idx - 0x8000];
-    switch (idx)
-    {
-        case 0xFF44:
-            std::cout << "_line = " << _line << std::endl;
-            return _line;
-    }
-    throw std::runtime_error("invalid memory access in VRAM");
+    _vram[idx - 0x8000] = val;
 }
 
 void Video::Clock()

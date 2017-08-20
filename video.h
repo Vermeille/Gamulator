@@ -50,8 +50,15 @@ class Video
 
         int mode();
 
-        void Set(uint16_t idx, byte val);
-        byte Get(uint16_t idx) const;
+        byte vram(uint16_t idx) const;
+        void set_vram(uint16_t idx, uint8_t val);
+
+        byte scroll_x() const { return _scroll_x; }
+        void set_scroll_x(byte val) { _scroll_x = val; }
+
+        byte scroll_y() const { return _scroll_y; }
+        void set_scroll_y(byte val) { _scroll_y = val; }
+
 
         void Clock();
 
@@ -67,4 +74,6 @@ class Video
         byte _state;
         byte _y_coord;
         byte _vram[0xA000 - 0x8000];
+        byte _scroll_x;
+        byte _scroll_y;
 };

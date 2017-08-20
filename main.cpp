@@ -8,31 +8,31 @@
 ** Last update 2014-02-19 18:35 vermeille
 */
 
-#include <iostream>
-#include <cstdlib>
 #include <signal.h>
+#include <cstdlib>
+#include <iostream>
 
 #include "addressbus.h"
 #include "cartridge.h"
-#include "z80.h"
+#include "keypad.h"
 #include "video.h"
+#include "z80.h"
 
 static Z80* z80_ptr;
 
-void segv_handler(int)
-{
+void segv_handler(int) {
     z80_ptr->Dump();
     exit(1);
 }
 
-int main(int argc, char** argv)
-{
-    if (argc <= 1)
-        return EXIT_FAILURE;
+int main(int argc, char** argv) {
+    if (argc <= 1) return EXIT_FAILURE;
 
     Video v;
     Cartridge card(argv[1]);
-    AddressBus addrbus(card, v);
+    LinkCable lk;
+    Keypad kp;
+    AddressBus addrbus(card, v, lk, kp);
     Z80 processor(addrbus, v);
     z80_ptr = &processor;
     struct sigaction action;

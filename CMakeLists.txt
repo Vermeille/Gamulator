@@ -16,3 +16,5 @@ add_executable(emu
     z80.cpp
     z80.h
     utils.h)
+
+target_link_libraries(emu sfml-window sfml-system sfml-graphics)

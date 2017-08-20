@@ -16,175 +16,7 @@
 
 #include "video.h"
 
-//////////////////////////////////////////
-////// CONTROL REGISTER //////////////////
-//////////////////////////////////////////
-void Video::set_lcd_display_enable(bool d)
-{
-    SetCtrlBit(7, d);
-}
-
-bool Video::lcd_display_enable()
-{
-    return GetCtrlBit(7);
-}
-
-void Video::set_tile_map(int mode)
-{
-    SetCtrlBit(6, mode);
-}
-
-int Video::tile_map()
-{
-    return GetCtrlBit(6);
-}
-
-void Video::set_win_display_enable(bool b)
-{
-    SetCtrlBit(5, b);
-}
-
-bool Video::win_display_enable()
-{
-    return GetCtrlBit(5);
-}
-void Video::set_tile_data_mode(bool b)
-{
-    SetCtrlBit(4, b);
-}
-
-bool Video::tile_data_mode()
-{
-    return GetCtrlBit(4);
-}
-
-void Video::set_tile_map_mode(bool b)
-{
-    SetCtrlBit(3, b);
-}
-
-bool Video::tile_map_mode()
-{
-    return GetCtrlBit(3);
-}
-
-void Video::set_sprite_size(int mode)
-{
-    SetCtrlBit(2, mode);
-}
-
-bool Video::sprite_size()
-{
-    return GetCtrlBit(2);
-}
-
-void Video::set_sprite_display_enable(bool b)
-{
-    SetCtrlBit(1,b);
-}
-
-bool Video::sprite_display_enable()
-{
-    return GetCtrlBit(0);
-}
-
-void Video::set_bg_display(bool b)
-{
-    SetCtrlBit(0, b);
-}
-
-bool Video::bg_display()
-{
-    return GetCtrlBit(0);
-}
-
-void Video::SetCtrlBit(int b, bool val)
-{
-    if (val)
-        _ctrl |= (1 << b);
-    else
-        _ctrl &= ~(1 << b);
-}
-
-bool Video::GetCtrlBit(int b)
-{
-    return _ctrl & (1 << b);
-}
-
-///////////////////////////////////////////////////////////
-///////////// STATE REGISTER //////////////////////////////
-///////////////////////////////////////////////////////////
-
-void Video::set_lyc_interrupt(bool b)
-{
-    SetStateBit(6, b);
-}
-
-bool Video::lyc_interrupt()
-{
-    return GetStateBit(6);
-}
-
-void Video::set_oam_interrupt(bool b)
-{
-    SetStateBit(5, b);
-}
-
-bool Video::oam_interrupt()
-{
-    return GetStateBit(5);
-}
-
-void Video::set_vblank(bool b)
-{
-    std::cout << "vblank interrupt " << b << std::endl;
-    SetStateBit(4, b);
-}
-
-bool Video::vblank()
-{
-    return GetStateBit(4);
-}
-
-void Video::set_hblank(bool b)
-{
-    SetStateBit(3, b);
-}
-
-bool Video::hblank()
-{
-    return GetStateBit(3);
-}
-
-bool Video::coincidence()
-{
-    return GetStateBit(2);
-}
-
-int Video::mode()
-{
-    return _state % 4;
-}
-
-void Video::SetStateBit(int b, bool val)
-{
-    if (val)
-        _state |= (1 << b);
-    else
-        _state &= ~(1 << b);
-}
-
-bool Video::GetStateBit(int b)
-{
-    return _state & (1 << b);
-}
-
-unsigned char Video::lcdc_y_coordinate()
-{
-    return _y_coord;
-}
-
-Video::byte Video::vram(uint16_t idx) const
+byte Video::vram(uint16_t idx) const
 {
     return _vram[idx - 0x8000];
 }
@@ -197,41 +29,38 @@ void Video::set_vram(uint16_t idx, byte val)
 void Video::Clock()
 {
     ++_clock;
-    char mode = _state & 0x3;
+    char mode = _state.mode();
 
-    if (mode == 2 && _clock == 80)
+    if (mode == LCDStatus::SEARCH_OAM && _clock == 80)
     {
         _clock = 0;
-        _state &= ~3;
-        _state |= 3;
+        _state.set_mode(LCDStatus::TRANSFER);
     }
-    else if (mode == 3 && _clock == 172)
+    else if (mode == LCDStatus::TRANSFER && _clock == 172)
     {
         _clock = 0;
-        _state &= ~3;
+        _state.set_mode(LCDStatus::HBLANK);
     }
-    else if (mode == 0 && _clock == 204)
+    else if (mode == LCDStatus::HBLANK && _clock == 204)
     {
         _clock = 0;
-        _state &= ~3;
         ++_line;
         if (_line == 145)
         {
-            _state |= 1;
-            set_vblank(true);
+            _state.set_mode(LCDStatus::VBLANK);
+            _state.set_vblank(true);
         }
         else
         {
-            _state |= 2;
+            _state.set_mode(LCDStatus::SEARCH_OAM);
         }
     }
-    else if (mode == 1 && _clock == 4560)
+    else if (mode == LCDStatus::VBLANK && _clock == 4560)
     {
-        set_vblank(false);
+        _state.set_vblank(false);
         _line = 0;
         _clock = 0;
-        _state &= ~3;
-        _state |= 2;
+        _state.set_mode(LCDStatus::SEARCH_OAM);
     }
 }
 

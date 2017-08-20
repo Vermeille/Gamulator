@@ -24,7 +24,8 @@ void NotImplementedSet(uint16_t idx, byte) {
     std::cout << "/!\\ " << std::hex << idx << " is not implemented yet\n";
 }
 
-AddressBus::AddressBus(Cartridge& card, Video& v) : _card(card), _vid(v) {
+AddressBus::AddressBus(Cartridge& card, Video& v, LinkCable& lk, Keypad& kp)
+    : _card(card), _vid(v), _lk(lk), _kp(kp) {
     using namespace std::placeholders;
     _mem_map = {
         {"interrupt_vector",
@@ -80,13 +81,39 @@ AddressBus::AddressBus(Cartridge& card, Video& v) : _card(card), _vid(v) {
         {"echo_ram", 0xE000, 0xFDFF, NotImplementedGet, NotImplementedSet},
         {"oam", 0xFE00, 0xFE9F, NotImplementedGet, NotImplementedSet},
         {"unusable", 0xFEA0, 0xFEFF, NotImplementedGet, NotImplementedSet},
-        {"io_ports", 0xFF00, 0xFF0E, NotImplementedGet, NotImplementedSet},
+        // IO PORTS
+        {"joyp",
+         0xFF00,
+         0xFF00,
+         std::bind(&Keypad::joyp, &_kp),
+         std::bind(&Keypad::set_joyp, &_kp, _2)},
+        {"serial_transfer",
+         0xFF01,
+         0xFF01,
+         std::bind(&LinkCable::Read, &_lk),
+         std::bind(&LinkCable::Send, &_lk, _2)},
+        {"serial_ctrl",
+         0xFF02,
+         0xFF02,
+         std::bind(&LinkCable::serial_control, &_lk),
+         std::bind(&LinkCable::set_serial_control, &_lk, _2)},
+        {"io_ports", 0xFF03, 0xFF0E, NotImplementedGet, NotImplementedSet},
         {"int_flag",
          0xFF0F,
          0xFF0F,
          [&](uint16_t) { return _interrupts; },
          [&](uint16_t, byte v) { _interrupts = v; }},
-        {"io_ports", 0xFF10, 0xFF41, NotImplementedGet, NotImplementedSet},
+        {"io_ports", 0xFF10, 0xFF3F, NotImplementedGet, NotImplementedSet},
+        {"lcdc",
+         0xFF40,
+         0xFF40,
+         std::bind(&Video::lcdc, &_vid),
+         std::bind(&Video::set_lcdc, &_vid, _2)},
+        {"lcd_status",
+         0xFF41,
+         0xFF41,
+         std::bind(&Video::lcd_status, &_vid),
+         std::bind(&Video::set_lcd_status, &_vid, _2)},
         {"scroll_y",
          0xFF42,
          0xFF42,
@@ -98,6 +125,7 @@ AddressBus::AddressBus(Cartridge& card, Video& v) : _card(card), _vid(v) {
          std::bind(&Video::scroll_x, &_vid),
          std::bind(&Video::set_scroll_x, &_vid, _2)},
         {"io_ports", 0xFF44, 0xFF7F, NotImplementedGet, NotImplementedSet},
+        // HRAM
         {"hram",
          0xFF80,
          0xFFFE,
@@ -146,4 +174,4 @@ std::string AddressBus::Print(uint16_t index) const {
     return FindAddr(index)._name;
 }
 
-byte AddressBus::GetIntByte() const { return (_vid.vblank() ? 1 : 0); }
+byte AddressBus::GetIntByte() const { return _vid.vblank(); }

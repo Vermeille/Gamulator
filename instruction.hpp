@@ -47,7 +47,7 @@ struct ToAddr
     {
         auto addr = Addr::Get(p);
         word val = (p->_addr.Get(addr + 1) << 8) + p->_addr.Get(addr);
-        std::cout << std::hex << "read word " << val << " at " << addr
+        std::cout << std::hex << "read word " << int(val) << " at " << addr
             << "(" << p->_addr.Print(addr) << ")" << std::endl;
         return val;
     }
@@ -57,7 +57,7 @@ struct ToAddr
         auto addr = Addr::Get(p);
         p->_addr.Set(addr, val & 0xFF);
         p->_addr.Set(addr + 1, val >> 8);
-        std::cout << std::hex << "set word " << val << " at " << addr
+        std::cout << std::hex << "set word " << int(val) << " at " << addr
             << "(" << p->_addr.Print(addr) << ")" << std::endl;
     }
 
@@ -65,7 +65,7 @@ struct ToAddr
     {
         auto addr = Addr::Get(p);
         auto b = p->_addr.Get(addr);
-        std::cout << std::hex << "read byte " << b << " at " << addr << "("
+        std::cout << std::hex << "read byte " << int(b) << " at " << addr << "("
             << p->_addr.Print(addr) << ")" << std::endl;
         return b;
     }
@@ -74,7 +74,7 @@ struct ToAddr
     {
         auto addr = Addr::Get(p);
         p->_addr.Set(addr, val);
-        std::cout << std::hex << "set byte " << val << " at " << addr << "("
+        std::cout << std::hex << "set byte " << int(val) << " at " << addr << "("
             << p->_addr.Print(addr) << ")" << std::endl;
     }
 

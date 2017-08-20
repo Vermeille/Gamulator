@@ -4,13 +4,15 @@
 
 #include "addressable.h"
 #include "cartridge.h"
+#include "keypad.h"
+#include "link.h"
 #include "video.h"
 
 class AddressBus : public Addressable {
    public:
     typedef AddressBus::byte byte;
 
-    AddressBus(Cartridge& card, Video& v);
+    AddressBus(Cartridge& card, Video& v, LinkCable& lk, Keypad& kp);
 
     void Set(uint16_t index, byte val) override;
 
@@ -31,6 +33,8 @@ class AddressBus : public Addressable {
     byte GetIntByte() const;
     Cartridge& _card;
     Video& _vid;
+    LinkCable& _lk;
+    Keypad _kp;
     byte _hram[0xFFFF - 0xFF80 + 1];
     byte _wram0[0xE000 - 0xC000];
     byte _int_mask;

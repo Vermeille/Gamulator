@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include <cstdint>
 #include <functional>
 #include "addressbus.h"
@@ -9,61 +8,80 @@
 typedef unsigned char byte;
 typedef uint16_t word;
 
-constexpr int operator "" _b(unsigned long long int N)
-{
-    return (N ? (N % 10 + 2* operator "" _b(N/10)) : 0);
-}
+class Z80 {
+   public:
+    Z80(AddressBus& addr, Video& v, LinkCable& lk);
 
-class Z80
-{
-    public:
-        Z80(AddressBus& addr, Video& v);
+    void Process();
 
-        void Process();
+    template <template <class, class> class Action, class Op1, class Op2>
+    class Instr {
+       public:
+        static void Do(Z80* p) { Action<Op1, Op2>::Do(p); }
 
-        template <template <class, class> class Action, class Op1, class Op2>
-        class Instr
-        {
-            public:
-                static void Do(Z80* p)
-                {
-                    Action<Op1, Op2>::Do(p);
-                }
+        static void Print(Z80* p) { Action<Op1, Op2>::Print(p); }
+    };
 
-                static void Print(int& c, AddressBus& code)
-                {
-                    Action<Op1, Op2>::Print(c, code);
-                }
-        };
+    enum RegName { A, B, C, D, E, F, H, L, AF, BC, DE, HL, SP, PC };
+    template <RegName>
+    struct Register;
+    void set_interrupts(byte);
 
-        enum RegName { A, B, C, D, E, F, H, L, AF, BC, DE, HL, SP, PC };
-        template <RegName>
-        struct Register;
-        void set_interrupts(byte);
-        void Dump() const;
+    static void PrintInstr(uint8_t pc, Z80* p);
+    static void PrintCBInstr(uint8_t pc, Z80* p);
+    void Dump() const;
+    void RunOpcode(byte opcode);
+    void RunCBOpcode(byte opcode);
 
-    private:
-        template <unsigned char Opcode, class Instr>
-        void RegisterOpcode();
-        void ProcessInterrupts();
+    bool zero_f() const { return GetBit(_regs[6].u, 6); }
+    void set_zero_f(bool v) {
+        _regs[6].u = (_regs[6].u & ~(1 << 6)) | (v << 6);
+    }
 
-        friend struct NextWord;
-        friend struct NextByte;
-        template <class>
-            friend struct ToAddr;
-        template <class>
-            friend struct ToAddrFF00;
+    bool hcarry_f() const { return (_regs[6].u >> 4) & 1; }
+    void set_hcarry_f(bool v) {
+        _regs[6].u = (_regs[6].u & ~(1 << 4)) | (v << 4);
+    }
 
-        template <class,class>
-            friend struct HALT;
+    bool sub_f() const { return (_regs[6].u >> 1) & 1; }
+    void set_sub_f(bool v) { _regs[6].u = (_regs[6].u & ~(1 << 1)) | (v << 1); }
 
-        byte _regs[8];
-        byte _flags;
-        word _sp;
-        word _pc;
-        AddressBus& _addr;
-        Video& _vid;
-        std::function<void(Z80*)> _instr[256];
-        std::function<void(int&, AddressBus&)> _print[256];
-        byte _interrupts;
+    bool carry_f() const { return (_regs[6].u >> 0) & 1; }
+    void set_carry_f(bool v) {
+        _regs[6].u = (_regs[6].u & ~(1 << 0)) | (v << 0);
+    }
+
+    void next_opcode() { ++_pc.u; }
+
+   private:
+    template <unsigned char Opcode, class Instr>
+    void RegisterOpcode();
+
+    template <unsigned char Opcode, class Inst>
+    void RegisterCBOpcode();
+
+    void ProcessInterrupts();
+
+    friend struct NextWord;
+    friend struct NextByte;
+    template <class>
+    friend struct ToAddr;
+    template <class>
+    friend struct ToAddrFF00;
+
+    template <class, class>
+    friend struct HALT;
+
+   public:
+    Data8 _regs[8];
+    Data16 _sp;
+    Data16 _pc;
+    AddressBus& _addr;
+    LinkCable _lk;
+    Video& _vid;
+    static std::array<std::function<void(Z80*)>, 256> _instr;
+    static std::array<std::function<void(Z80*)>, 256> _cb_instr;
+    static std::array<std::function<void(Z80*)>, 256> _print;
+    static std::array<std::function<void(Z80*)>, 256> _cb_print;
+    byte _interrupts;
 };

@@ -8,88 +8,203 @@
  ** Last update 2014-02-20 16:22 vermeille
  */
 
-#include <stdexcept>
 #include <iostream>
+#include <stdexcept>
 
 #include "cartridge.h"
-#include "z80.h"
 #include "utils.h"
+#include "z80.h"
 
-    Cartridge::Cartridge(std::string filename)
-: _ram(0x2000, 0), _rom_bank(1), _ram_bank(0)
-{
+void Error(uint16_t idx) {
+    throw std::runtime_error("Invalid access at " + hex(idx));
+}
+
+class Raw : public Cartridge::Controller {
+   public:
+    Raw(std::vector<byte>&& data) : Cartridge::Controller(std::move(data)) {
+        _mem_map = {
+            {"rom_bank_0",
+             0x0000,
+             0x3FFF,
+             [&](uint16_t idx) { return ReadRom(idx); },
+             [&](uint16_t idx, byte) {
+                 cerror << "Can't switch ROM bank without MBC\n";
+             }},
+            {"rom_bank_switchable",
+             0x4000,
+             0x7FFF,
+             [&](uint16_t idx) { return ReadRom(idx); },
+             [&](uint16_t idx, byte) {
+                 cerror << "Can't switch ROM bank without MBC\n";
+             }},
+            {"ram_bank",
+             0xA000,
+             0xBFFF,
+             [&](uint16_t idx) { return _ram[idx - 0xA000]; },
+             [&](uint16_t idx, byte b) { _ram[idx - 0xA000] = b; }},
+        };
+    };
+
+   private:
+    std::array<byte, 0xC000 - 0xA000> _ram;
+};
+
+class MBC1 : public Cartridge::Controller {
+   public:
+    MBC1(std::vector<byte>&& data)
+        : Cartridge::Controller(std::move(data)), _rom_nbr(1) {
+        _mem_map = {{"rom_bank_0",
+                     0x0000,
+                     0x1FFF,
+                     [&](uint16_t idx) { return ReadRom(idx); },
+                     [&](uint16_t idx, byte b) {
+                         cerror << "RAM/Timer enable not implmented\n";
+                     }},
+                    {"rom_bank_0",
+                     0x2000,
+                     0x3FFF,
+                     [&](uint16_t idx) { return ReadRom(idx); },
+                     [&](uint16_t, byte b) {
+                         b = b & 0b1'1111;
+                         b = b == 0 ? 1 : b;
+                         _rom_nbr = (_rom_nbr & ~0b1'1111) | b;
+                     }},
+                    {"rom_bank_switchable",
+                     0x4000,
+                     0x5FFF,
+                     [&](uint16_t idx) {
+                         return ReadRom(idx - 0x4000 + _rom_nbr * 0x4000);
+                     },
+                     [&](uint16_t, byte b) {
+                         if (_selector == Rom) {
+                             _rom_nbr =
+                                 (_rom_nbr & ~(0b11 << 5)) | ((b & 0b11) << 5);
+                         } else {
+                             _ram_nbr = b;
+                         }
+                     }},
+                    {"rom_bank_switchable",
+                     0x6000,
+                     0x7FFF,
+                     [&](uint16_t idx) {
+                         return ReadRom(idx - 0x4000 + _rom_nbr * 0x4000);
+                     },
+                     [&](uint16_t, byte b) { _selector = RamRomSelector(b); }},
+                    {
+                        "cartridge_ram",
+                        0xA000,
+                        0xBFFF,
+                        [&](uint16_t idx) {
+                            return _ram[(idx - 0xA000) + _ram_nbr * 0x2000];
+                        },
+                        [&](uint16_t idx, byte b) {
+                            _ram[(idx - 0xA000) + _ram_nbr * 0x2000] = b;
+                        },
+
+                    }};
+    }
+
+   private:
+    byte _rom_nbr;
+    std::array<byte, 4 * 0x2000> _ram;
+    byte _ram_nbr;
+    enum RamRomSelector { Rom, Ram } _selector;
+};
+
+class MBC3 : public Cartridge::Controller {
+   public:
+    MBC3(std::vector<byte>&& data)
+        : Cartridge::Controller(std::move(data)), _rom_nbr(1) {
+        _mem_map = {
+            {"rom_bank_0",
+             0x0000,
+             0x1FFF,
+             [&](uint16_t idx) { return ReadRom(idx); },
+             [&](uint16_t idx, byte b) {
+                 std::cout << "RAM/Timer enable not implmented\n";
+             }},
+            {"rom_bank_0",
+             0x2000,
+             0x3FFF,
+             [&](uint16_t idx) { return ReadRom(idx); },
+             [&](uint16_t, byte b) { _rom_nbr = (b == 0 ? 1 : b); }},
+            {"rom_bank_switchable",
+             0x4000,
+             0x5FFF,
+             [&](uint16_t idx) {
+                 return ReadRom(idx - 0x4000 + _rom_nbr * 0x4000);
+             },
+             [&](uint16_t, byte b) { _ram_nbr = b & 0b11; }},
+            {"rom_bank_switchable",
+             0x6000,
+             0x7FFF,
+             [&](uint16_t idx) {
+                 return ReadRom(idx - 0x4000 + _rom_nbr * 0x4000);
+             },
+             [&](uint16_t, byte b) { std::cout << "RTC not implemented\n"; }},
+            {
+                "cartridge_ram",
+                0xA000,
+                0xBFFF,
+                [&](uint16_t idx) {
+                    return _ram[(idx - 0xA000) + _ram_nbr * 0x2000];
+                },
+                [&](uint16_t idx, byte b) {
+                    _ram[(idx - 0xA000) + _ram_nbr * 0x2000] = b;
+                },
+
+            }};
+    }
+
+   private:
+    byte _rom_nbr;
+    std::array<byte, 4 * 0x2000> _ram;
+    byte _ram_nbr;
+};
+
+Cartridge::Cartridge(std::string filename) {
+    std::vector<byte> data;
     std::ifstream file(filename, std::ios::in | std::ios::binary);
-    while (file.good())
-    {
-        _data.push_back(file.get());
+    while (file.good()) {
+        data.push_back(file.get());
     }
-    std::cout << "Game is " << reinterpret_cast<char*>(&_data[0x134])
-        << std::endl;
-    _mbc = _data[0x147];
-}
+    std::cout << "Game is " << reinterpret_cast<char*>(&data[0x134])
+              << " size=" << std::hex << data.size() << std::endl;
+    int mbc = data[0x147];
+    std::cout << "CARTRIDGE TYPE: " << std::hex << int(mbc) << "\n";
 
-
-void Cartridge::Set(word index, byte val)
-{
-    switch (index & 0xF000)
-    {
-        case 0x0000:
-        case 0x1000:
-            std::cout << "Toggle external ram" << std::endl;
+    switch (mbc) {
+        case 0x00:
+            _ctrl = std::make_unique<Raw>(std::move(data));
             break;
-        case 0x2000:
-        case 0x3000:
-            std::cout << "LOW bank number" << std::endl;
-            _rom_bank = (_rom_bank & 11100000_b) + (val & 00011111_b);
+        case 0x01:
+            _ctrl = std::make_unique<MBC1>(std::move(data));
             break;
-        case 0x4000:
-        case 0x5000:
-            if (_selector == Ram)
-                _ram_bank = val;
-            else
-                _rom_bank = (_rom_bank & 00011111_b)
-                    + ((11_b & val) << 5);
-            break;
-        case 0x6000:
-        case 0x7000:
-            _selector = (val) ? Ram : Rom;
-            break;
-        case 0x8000:
-        case 0x9000:
-            throw "Erreur d'acces, 0x8xxx ou 0x9xxx non cartouche";
-            break;
-        case 0xA000:
-        case 0xB000:
-            std::cout << "Writing in RAM";
-            _ram[_ram_bank*0x2000+(index-0xA000)] = val;
+        case 0x13:
+            _ctrl = std::make_unique<MBC3>(std::move(data));
             break;
     }
 }
 
-byte Cartridge::Get(word index) const
-{
-    if (index < 0x4000)
-        return _data[index];
-    else if (index < 0x8000)
-        return _data[_rom_bank*0x4000+(index-0x4000)];
-    else if (index < 0xC000)
-        return _ram[_ram_bank*0x2000+(index-0xA000)];
-    throw std::runtime_error("No such address in cartridge");
-}
+const Cartridge::Addr& Cartridge::Controller::FindAddr(uint16_t addr) const {
+    int b = 0;
+    int e = _mem_map.size();
 
-std::string Cartridge::Print(uint16_t index) const {
-    if (index < 0x100)
-        throw "invalid addr";
-    else if (index < 0x150)
-        return "cartridge_header_area";
-    else if (index < 0x4000)
-        return "cartridge_rom_0";
-    else if (index < 0x8000)
-        return "cartridge_rom_bank_" + std::to_string(_rom_bank);
-    else if (index < 0xA000)
-        throw "not cartridge addr";
-    else if (index < 0xC000)
-        return "cartridge_ram_bank_" + std::to_string(_ram_bank);
-    else
-        throw "not cartridge addr";
+    while (true) {
+        if (b == e) {
+            Error(addr);
+        }
+
+        int m = (b + e) / 2;
+
+        if (_mem_map[m]._begin <= addr && addr <= _mem_map[m]._end) {
+            return _mem_map[m];
+        }
+
+        if (addr < _mem_map[m]._begin) {
+            e = m;
+        } else {
+            b = m + 1;
+        }
+    }
 }

@@ -20,6 +20,12 @@
 
 static Z80* z80_ptr;
 
+Logger cinstr;
+Logger cdebug;
+Logger cevent;
+Logger cerror;
+Logger serial;
+
 void segv_handler(int) {
     z80_ptr->Dump();
     exit(1);
@@ -29,11 +35,28 @@ int main(int argc, char** argv) {
     if (argc <= 1) return EXIT_FAILURE;
 
     Video v;
-    Cartridge card(argv[1]);
+
+    std::string gamefile;
+    for (int i = 1; i < argc; ++i) {
+        if (argv[i][0] != '-') {
+            gamefile = argv[i];
+        } else if (argv[i] == std::string("--show-instr")) {
+            cinstr.enabled = true;
+        } else if (argv[i] == std::string("--show-debug")) {
+            cdebug.enabled = true;
+        } else if (argv[i] == std::string("--show-event")) {
+            cevent.enabled = true;
+        } else if (argv[i] == std::string("--serial")) {
+            serial.enabled = true;
+        } else if (argv[i] == std::string("--errors")) {
+            cerror.enabled = true;
+        }
+    }
+    Cartridge card(gamefile);
     LinkCable lk;
     Keypad kp;
     AddressBus addrbus(card, v, lk, kp);
-    Z80 processor(addrbus, v);
+    Z80 processor(addrbus, v, lk);
     z80_ptr = &processor;
     struct sigaction action;
     action.sa_handler = segv_handler;

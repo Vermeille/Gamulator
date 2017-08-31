@@ -8,6 +8,7 @@
  ** Last update mer. 02 mai 2012 13:14:28 CEST Guillaume "Vermeille" Sanchez
  */
 
+#include <cassert>
 #include <iostream>
 #include <stdexcept>
 
@@ -16,38 +17,28 @@
 #include "z80.h"
 
 byte NotImplementedGet(uint16_t idx) {
-    std::cout << "/!\\ " << std::hex << idx << " is not implemented yet\n";
-    return 0;
+    cerror << "/!\\ " << std::hex << idx << " is not implemented yet\n";
+    return 0xFF;
 }
 
 void NotImplementedSet(uint16_t idx, byte) {
-    std::cout << "/!\\ " << std::hex << idx << " is not implemented yet\n";
+    cerror << "/!\\ " << std::hex << idx << " is not implemented yet\n";
 }
 
 AddressBus::AddressBus(Cartridge& card, Video& v, LinkCable& lk, Keypad& kp)
     : _card(card), _vid(v), _lk(lk), _kp(kp) {
     using namespace std::placeholders;
     _mem_map = {
-        {"interrupt_vector",
-         0x0000,
-         0x00FF,
-         NotImplementedGet,
-         NotImplementedSet},
-        {"cartridge_header",
-         0x0100,
-         0x014F,
-         std::bind(&Cartridge::Get, &_card, _1),
-         std::bind(&Cartridge::Set, &_card, _1, _2)},
         {"cartridge_rom_bank_0",
-         0x0150,
+         0x0000,
          0x3FFF,
-         std::bind(&Cartridge::Get, &_card, _1),
-         std::bind(&Cartridge::Set, &_card, _1, _2)},
+         std::bind(&Cartridge::Read, &_card, _1),
+         std::bind(&Cartridge::Write, &_card, _1, _2)},
         {"cartridge_rom_bank_switchable",
          0x4000,
          0x7FFF,
-         std::bind(&Cartridge::Get, &_card, _1),
-         std::bind(&Cartridge::Set, &_card, _1, _2)},
+         std::bind(&Cartridge::Read, &_card, _1),
+         std::bind(&Cartridge::Write, &_card, _1, _2)},
         {"vram",
          0x8000,
          0x97FF,
@@ -66,20 +57,24 @@ AddressBus::AddressBus(Cartridge& card, Video& v, LinkCable& lk, Keypad& kp)
         {"cartridge_ram",
          0xA000,
          0xBFFF,
-         std::bind(&Cartridge::Get, &_card, _1),
-         std::bind(&Cartridge::Set, &_card, _1, _2)},
+         std::bind(&Cartridge::Read, &_card, _1),
+         std::bind(&Cartridge::Write, &_card, _1, _2)},
         {"internal_ram_bank0",
          0xC000,
          0xCFFF,
-         [&](uint16_t index) { return _wram0[index - 0xC000]; },
-         [&](uint16_t index, byte v) { _wram0[index - 0xC000] = v; }},
+         [&](uint16_t index) { return _wram0[index - 0xC000].u; },
+         [&](uint16_t index, byte v) { _wram0[index - 0xC000].u = v; }},
         {"internal_ram_bank1",
          0xD000,
          0xDFFF,
-         [&](uint16_t index) { return _wram0[index - 0xC000]; },
-         [&](uint16_t index, byte v) { _wram0[index - 0xC000] = v; }},
+         [&](uint16_t index) { return _wram0[index - 0xC000].u; },
+         [&](uint16_t index, byte v) { _wram0[index - 0xC000].u = v; }},
         {"echo_ram", 0xE000, 0xFDFF, NotImplementedGet, NotImplementedSet},
-        {"oam", 0xFE00, 0xFE9F, NotImplementedGet, NotImplementedSet},
+        {"oam",
+         0xFE00,
+         0xFE9F,
+         std::bind(&Video::oam, &_vid, _1),
+         std::bind(&Video::set_oam, &_vid, _1, _2)},
         {"unusable", 0xFEA0, 0xFEFF, NotImplementedGet, NotImplementedSet},
         // IO PORTS
         {"joyp",
@@ -124,28 +119,46 @@ AddressBus::AddressBus(Cartridge& card, Video& v, LinkCable& lk, Keypad& kp)
          0xFF43,
          std::bind(&Video::scroll_x, &_vid),
          std::bind(&Video::set_scroll_x, &_vid, _2)},
-        {"io_ports", 0xFF44, 0xFF7F, NotImplementedGet, NotImplementedSet},
+        {"y_coord",
+         0xFF44,
+         0xFF44,
+         std::bind(&Video::y_coord, &_vid),
+         NotImplementedSet},
+        {"ly_compare",
+         0xFF45,
+         0xFF45,
+         std::bind(&Video::ly_compare, &_vid),
+         std::bind(&Video::set_ly_compare, &_vid, _2)},
+        {"dma",
+         0xFF46,
+         0xFF46,
+         NotImplementedGet,
+         [&](int, byte v) {
+             for (int i = 0; i < 0x9F; ++i) {
+                 _vid.set_oam(0xFE00 + i, Get((v << 8) + i).u);
+             }
+         }},
+        {"io_ports", 0xFF47, 0xFF7F, NotImplementedGet, NotImplementedSet},
         // HRAM
         {"hram",
          0xFF80,
          0xFFFE,
-         [&](uint16_t index) { return _hram[index - 0xFF80]; },
-         [&](uint16_t index, byte v) { _hram[index - 0xFF80] = v; }},
+         [&](uint16_t index) { return _hram[index - 0xFF80].u; },
+         [&](uint16_t index, byte v) { _hram[index - 0xFF80].u = v; }},
         {"interrupt_master_enable",
          0xFFFF,
          0xFFFF,
          [&](uint16_t) { return _int_mask; },
-         [&](uint16_t, byte v) { _int_mask = v; }},
-        {"unmapped", 0x10000, 0x1FFFF, NotImplementedGet, NotImplementedSet}};
+         [&](uint16_t, byte v) { _int_mask = v; }}};
 }
 
 const AddressBus::Addr& AddressBus::FindAddr(uint16_t addr) const {
     int b = 0;
-    int e = _mem_map.size() - 1;
+    int e = _mem_map.size();
 
     while (true) {
         if (b == e) {
-            return _mem_map.back();
+            assert(false);
         }
 
         int m = (b + e) / 2;
@@ -162,16 +175,14 @@ const AddressBus::Addr& AddressBus::FindAddr(uint16_t addr) const {
     }
 }
 
-void AddressBus::Set(uint16_t index, byte val) {
-    return FindAddr(index)._set(index, val);
+void AddressBus::Set(uint16_t index, Data8 val) {
+    return FindAddr(index)._set(index, val.u);
 }
 
-byte AddressBus::Get(uint16_t index) const {
+Data8 AddressBus::Get(uint16_t index) const {
     return FindAddr(index)._get(index);
 }
 
 std::string AddressBus::Print(uint16_t index) const {
     return FindAddr(index)._name;
 }
-
-byte AddressBus::GetIntByte() const { return _vid.vblank(); }

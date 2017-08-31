@@ -6,18 +6,17 @@
 #include "cartridge.h"
 #include "keypad.h"
 #include "link.h"
+#include "utils.h"
 #include "video.h"
 
-class AddressBus : public Addressable {
+class AddressBus {
    public:
-    typedef AddressBus::byte byte;
-
     AddressBus(Cartridge& card, Video& v, LinkCable& lk, Keypad& kp);
 
-    void Set(uint16_t index, byte val) override;
+    void Set(uint16_t index, Data8 val);
 
-    byte Get(uint16_t index) const override;
-    std::string Print(uint16_t index) const override;
+    Data8 Get(uint16_t index) const;
+    std::string Print(uint16_t index) const;
 
    private:
     struct Addr {
@@ -35,8 +34,9 @@ class AddressBus : public Addressable {
     Video& _vid;
     LinkCable& _lk;
     Keypad _kp;
-    byte _hram[0xFFFF - 0xFF80 + 1];
-    byte _wram0[0xE000 - 0xC000];
+    std::array<Data8, 0xFFFF - 0xFF80> _hram;
+    std::array<Data8, 0xE000 - 0xC000> _wram0;
+
     byte _int_mask;
     std::vector<Addr> _mem_map;
     mutable byte _interrupts;

@@ -1,16 +1,6 @@
-/*
-
- **
- ** Made by Guillaume "Vermeille" Sanchez
- ** Login   sanche_g <Guillaume.V.Sanchez@gmail.com>
- **
- ** Started on  mer. 25 avril 2012 13:59:09 CEST Guillaume "Vermeille" Sanchez
- ** Last update 2014-02-20 17:36 vermeille
- */
-
-
 #include "z80.h"
 
+#include <cassert>
 #include <iomanip>
 #include <iostream>
 #include <tuple>
@@ -18,110 +8,119 @@
 
 #include "instruction.hpp"
 
-    Z80::Z80(AddressBus& addr, Video& v)
-: _sp(0xFFFE), _pc(0x100), _addr(addr), _vid(v), _interrupts(0xFF)
-{
-    Register<F>::Set(this, 0xB0);
-    Register<A>::Set(this, 0x01);
-    Register<C>::Set(this, 0x13);
-    Register<B>::Set(this, 0x00);
-    Register<E>::Set(this, 0xD8);
-    Register<D>::Set(this, 0x00);
-    Register<L>::Set(this, 0x4D);
-    Register<H>::Set(this, 0x01);
+std::array<std::function<void(Z80*)>, 256> Z80::_instr;
+std::array<std::function<void(Z80*)>, 256> Z80::_cb_instr;
+std::array<std::function<void(Z80*)>, 256> Z80::_print;
+std::array<std::function<void(Z80*)>, 256> Z80::_cb_print;
 
-    _addr.Set(0xFF05, 0x00); // TIMA
-    _addr.Set(0xFF06, 0X00); // TMA
-    _addr.Set(0xFF07, 0x00); // TAC
-    _addr.Set(0xFF10, 0x80); // NR10
-    _addr.Set(0xFF11, 0xBF); // NR11
-    _addr.Set(0xFF12, 0xF3); // NR12
-    _addr.Set(0xFF14, 0xBF); // NR14
-    _addr.Set(0xFF16, 0x3F); // NR21
-    _addr.Set(0xFF17, 0x00); // NR22
-    _addr.Set(0xFF19, 0xBF); // NR24
-    _addr.Set(0xFF1A, 0x7F); // NR30
-    _addr.Set(0xFF1B, 0xFF); // NR31
-    _addr.Set(0xFF1C, 0x9F); // NR32
-    _addr.Set(0xFF1E, 0xBF); // NR33
-    _addr.Set(0xFF20, 0xFF); // NR41
-    _addr.Set(0xFF21, 0x00); // NR42
-    _addr.Set(0xFF22, 0x00); // NR43
-    _addr.Set(0xFF23, 0xBF); // NR30
-    _addr.Set(0xFF24, 0x77); // NR50
-    _addr.Set(0xFF25, 0xF3); // NR51
-    _addr.Set(0xFF26, 0xF1); // NR52
-    _addr.Set(0xFF40, 0x91); // LCDC
-    _addr.Set(0xFF42, 0x00); // SCY
-    _addr.Set(0xFF43, 0x00); // SCX
-    _addr.Set(0xFF45, 0x00); // LYC
-    _addr.Set(0xFF47, 0xFC); // BGP
-    _addr.Set(0xFF48, 0xFF); // OBP0
-    _addr.Set(0xFF49, 0xFF); // OBP1
-    _addr.Set(0xFF4A, 0x00); // WY
-    _addr.Set(0xFF4B, 0x00); // WX
-    _addr.Set(0xFFFF, 0x00); // IE
+Z80::Z80(AddressBus& addr, Video& v, LinkCable& lk)
+    : _sp(uint16_t(0xFFFE)),
+      _pc(uint16_t(0x100)),
+      _addr(addr),
+      _lk(lk),
+      _vid(v),
+      _interrupts(uint8_t(0xFF)) {
+    Register<F>::Set(this, uint8_t(0xB0));
+    Register<A>::Set(this, uint8_t(0x01));
+    Register<C>::Set(this, uint8_t(0x13));
+    Register<B>::Set(this, uint8_t(0x00));
+    Register<E>::Set(this, uint8_t(0xD8));
+    Register<D>::Set(this, uint8_t(0x00));
+    Register<L>::Set(this, uint8_t(0x4D));
+    Register<H>::Set(this, uint8_t(0x01));
+
+    _addr.Set(0xFF05, uint8_t(0x00));  // TIMA
+    _addr.Set(0xFF06, uint8_t(0X00));  // TMA
+    _addr.Set(0xFF07, uint8_t(0x00));  // TAC
+    _addr.Set(0xFF10, uint8_t(0x80));  // NR10
+    _addr.Set(0xFF11, uint8_t(0xBF));  // NR11
+    _addr.Set(0xFF12, uint8_t(0xF3));  // NR12
+    _addr.Set(0xFF14, uint8_t(0xBF));  // NR14
+    _addr.Set(0xFF16, uint8_t(0x3F));  // NR21
+    _addr.Set(0xFF17, uint8_t(0x00));  // NR22
+    _addr.Set(0xFF19, uint8_t(0xBF));  // NR24
+    _addr.Set(0xFF1A, uint8_t(0x7F));  // NR30
+    _addr.Set(0xFF1B, uint8_t(0xFF));  // NR31
+    _addr.Set(0xFF1C, uint8_t(0x9F));  // NR32
+    _addr.Set(0xFF1E, uint8_t(0xBF));  // NR33
+    _addr.Set(0xFF20, uint8_t(0xFF));  // NR41
+    _addr.Set(0xFF21, uint8_t(0x00));  // NR42
+    _addr.Set(0xFF22, uint8_t(0x00));  // NR43
+    _addr.Set(0xFF23, uint8_t(0xBF));  // NR30
+    _addr.Set(0xFF24, uint8_t(0x77));  // NR50
+    _addr.Set(0xFF25, uint8_t(0xF3));  // NR51
+    _addr.Set(0xFF26, uint8_t(0xF1));  // NR52
+    _addr.Set(0xFF40, uint8_t(0x91));  // LCDC
+    _addr.Set(0xFF42, uint8_t(0x00));  // SCY
+    _addr.Set(0xFF43, uint8_t(0x00));  // SCX
+    _addr.Set(0xFF45, uint8_t(0x00));  // LYC
+    _addr.Set(0xFF47, uint8_t(0xFC));  // BGP
+    _addr.Set(0xFF48, uint8_t(0xFF));  // OBP0
+    _addr.Set(0xFF49, uint8_t(0xFF));  // OBP1
+    _addr.Set(0xFF4A, uint8_t(0x00));  // WY
+    _addr.Set(0xFF4B, uint8_t(0x00));  // WX
+    _addr.Set(0xFFFF, uint8_t(0x00));  // IE
 
     RegisterOpcode<0x00, NOP>();
-    RegisterOpcode<0x01, Instr<LD, Register<BC>, NextWord>>();
-    RegisterOpcode<0x02, Instr<LD,ToAddr<Register<BC>>,Register<A>>>();
-    RegisterOpcode<0x03, Instr<INC, Register<BC>, void>>();
+    RegisterOpcode<0x01, Instr<LDw, Register<BC>, NextWord>>();
+    RegisterOpcode<0x02, Instr<LD, ToAddr<Register<BC>>, Register<A>>>();
+    RegisterOpcode<0x03, Instr<INCw, Register<BC>, void>>();
     RegisterOpcode<0x04, Instr<INC, Register<B>, void>>();
     RegisterOpcode<0x05, Instr<DEC, Register<B>, void>>();
     RegisterOpcode<0x06, Instr<LD, Register<B>, NextByte>>();
     RegisterOpcode<0x07, Instr<RLC, Register<A>, void>>();
-    RegisterOpcode<0x08, Instr<LD, ToAddr<NextWord>, Register<SP>>>();
-    RegisterOpcode<0x09, Instr<ADD, Register<HL>, Register<BC>>>();
-    RegisterOpcode<0x0A, Instr<LD,Register<A>,ToAddr<Register<BC>>>>();
-    RegisterOpcode<0x0B, Instr<DEC, Register<BC>, void>>();
+    RegisterOpcode<0x08, Instr<LDw, ToAddr<NextWord>, Register<SP>>>();
+    RegisterOpcode<0x09, Instr<ADDw, Register<HL>, Register<BC>>>();
+    RegisterOpcode<0x0A, Instr<LD, Register<A>, ToAddr<Register<BC>>>>();
+    RegisterOpcode<0x0B, Instr<DECw, Register<BC>, void>>();
     RegisterOpcode<0x0C, Instr<INC, Register<C>, void>>();
     RegisterOpcode<0x0D, Instr<DEC, Register<C>, void>>();
     RegisterOpcode<0x0E, Instr<LD, Register<C>, NextByte>>();
     RegisterOpcode<0x0F, Instr<RRC, Register<A>, void>>();
-    RegisterOpcode<0x10, Instr<Stop, void, void>>();
-    RegisterOpcode<0x11, Instr<LD, Register<DE>, NextWord>>();
-    RegisterOpcode<0x12, Instr<LD,ToAddr<Register<DE>>,Register<A>>>();
-    RegisterOpcode<0x13, Instr<INC, Register<DE>, void>>();
+    RegisterOpcode<0x10, Instr<STOP, void, void>>();
+    RegisterOpcode<0x11, Instr<LDw, Register<DE>, NextWord>>();
+    RegisterOpcode<0x12, Instr<LD, ToAddr<Register<DE>>, Register<A>>>();
+    RegisterOpcode<0x13, Instr<INCw, Register<DE>, void>>();
     RegisterOpcode<0x14, Instr<INC, Register<D>, void>>();
     RegisterOpcode<0x15, Instr<DEC, Register<D>, void>>();
     RegisterOpcode<0x16, Instr<LD, Register<D>, NextByte>>();
     RegisterOpcode<0x17, Instr<RL, Register<A>, void>>();
     RegisterOpcode<0x18, Instr<JR, NextByte, void>>();
-    RegisterOpcode<0x19, Instr<ADD, Register<HL>, Register<DE>>>();
-    RegisterOpcode<0x1A, Instr<LD, Register<A>, ToAddr<Register<DE>> >>();
-    RegisterOpcode<0x1B, Instr<DEC, Register<DE>, void>>();
+    RegisterOpcode<0x19, Instr<ADDw, Register<HL>, Register<DE>>>();
+    RegisterOpcode<0x1A, Instr<LD, Register<A>, ToAddr<Register<DE>>>>();
+    RegisterOpcode<0x1B, Instr<DECw, Register<DE>, void>>();
     RegisterOpcode<0x1C, Instr<INC, Register<E>, void>>();
     RegisterOpcode<0x1D, Instr<DEC, Register<E>, void>>();
     RegisterOpcode<0x1E, Instr<LD, Register<E>, NextByte>>();
     RegisterOpcode<0x1F, Instr<RR, Register<A>, void>>();
     RegisterOpcode<0x20, Instr<JRNZ, NextByte, void>>();
-    RegisterOpcode<0x21, Instr<LD, Register<HL>, NextWord>>();
+    RegisterOpcode<0x21, Instr<LDw, Register<HL>, NextWord>>();
     RegisterOpcode<0x22, Instr<LDI, ToAddr<Register<HL>>, Register<A>>>();
-    RegisterOpcode<0x23, Instr<INC, Register<HL>, void>>();
+    RegisterOpcode<0x23, Instr<INCw, Register<HL>, void>>();
     RegisterOpcode<0x24, Instr<INC, Register<H>, void>>();
     RegisterOpcode<0x25, Instr<DEC, Register<H>, void>>();
     RegisterOpcode<0x26, Instr<LD, Register<H>, NextByte>>();
-    RegisterOpcode<0x27, Instr<Nop, void, void>>(); // FIXME DAA
+    RegisterOpcode<0x27, Instr<DAA, void, void>>();
     RegisterOpcode<0x28, Instr<JRZ, NextByte, void>>();
-    RegisterOpcode<0x29, Instr<ADD, Register<HL>, Register<HL>>>();
+    RegisterOpcode<0x29, Instr<ADDw, Register<HL>, Register<HL>>>();
     RegisterOpcode<0x2A, Instr<LDI, Register<A>, ToAddr<Register<HL>>>>();
-    RegisterOpcode<0x2B, Instr<DEC, Register<HL>, void>>();
+    RegisterOpcode<0x2B, Instr<DECw, Register<HL>, void>>();
     RegisterOpcode<0x2C, Instr<INC, Register<L>, void>>();
     RegisterOpcode<0x2D, Instr<DEC, Register<L>, void>>();
     RegisterOpcode<0x2E, Instr<LD, Register<L>, NextByte>>();
     RegisterOpcode<0x2F, Instr<CPL, Register<A>, void>>();
     RegisterOpcode<0x30, Instr<JRC, NextByte, void>>();
-    RegisterOpcode<0x31, Instr<LD, Register<SP>, NextWord>>();
+    RegisterOpcode<0x31, Instr<LDw, Register<SP>, NextWord>>();
     RegisterOpcode<0x32, Instr<LDD, ToAddr<Register<HL>>, Register<A>>>();
-    RegisterOpcode<0x33, Instr<INC, Register<SP>, void>>();
+    RegisterOpcode<0x33, Instr<INCw, Register<SP>, void>>();
     RegisterOpcode<0x34, Instr<INC, ToAddr<Register<HL>>, void>>();
     RegisterOpcode<0x35, Instr<DEC, ToAddr<Register<HL>>, void>>();
     RegisterOpcode<0x36, Instr<LD, ToAddr<Register<HL>>, NextByte>>();
     RegisterOpcode<0x37, Instr<SCF, void, void>>();
     RegisterOpcode<0x38, Instr<JRC, NextByte, void>>();
-    RegisterOpcode<0x39, Instr<ADD, Register<HL>, Register<SP>>>();
+    RegisterOpcode<0x39, Instr<ADDw, Register<HL>, Register<SP>>>();
     RegisterOpcode<0x3A, Instr<LDD, Register<A>, ToAddr<Register<HL>>>>();
-    RegisterOpcode<0x3B, Instr<DEC, Register<SP>, void>>();
+    RegisterOpcode<0x3B, Instr<DECw, Register<SP>, void>>();
     RegisterOpcode<0x3C, Instr<INC, Register<A>, void>>();
     RegisterOpcode<0x3D, Instr<DEC, Register<A>, void>>();
     RegisterOpcode<0x3E, Instr<LD, Register<A>, NextByte>>();
@@ -137,7 +136,7 @@
     RegisterOpcode<0x48, Instr<LD, Register<C>, Register<B>>>();
     RegisterOpcode<0x49, Instr<LD, Register<C>, Register<C>>>();
     RegisterOpcode<0x4A, Instr<LD, Register<C>, Register<D>>>();
-    RegisterOpcode<0x4B, Instr<LD, Register<C>, Register<D>>>();
+    RegisterOpcode<0x4B, Instr<LD, Register<C>, Register<E>>>();
     RegisterOpcode<0x4C, Instr<LD, Register<C>, Register<H>>>();
     RegisterOpcode<0x4D, Instr<LD, Register<C>, Register<L>>>();
     RegisterOpcode<0x4E, Instr<LD, Register<C>, ToAddr<Register<HL>>>>();
@@ -265,7 +264,7 @@
     RegisterOpcode<0xC8, Instr<RETZ, void, void>>();
     RegisterOpcode<0xC9, Instr<RET, void, void>>();
     RegisterOpcode<0xCA, Instr<JPZ, NextWord, void>>();
-    RegisterOpcode<0xCB, Instr<Nop, void, void>>(); // FIXME extended
+    RegisterOpcode<0xCB, Instr<EXTENDED, void, void>>();
     RegisterOpcode<0xCC, Instr<CALLZ, NextWord, void>>();
     RegisterOpcode<0xCD, Instr<CALL, NextWord, void>>();
     RegisterOpcode<0xCE, Instr<ADC, Register<A>, NextByte>>();
@@ -286,127 +285,177 @@
     // 0xDD xxxxxxxxxxxxxxxxxxxxxxxxx
     RegisterOpcode<0xDE, Instr<SBC, Register<A>, NextByte>>();
     RegisterOpcode<0xDF, Instr<RST18, void, void>>();
-    RegisterOpcode<0xE0, Instr<LDH, ToAddrFF00<NextByte>, Register<A>>>();
+    RegisterOpcode<0xE0, Instr<LD, ToAddrFF00<NextByte>, Register<A>>>();
     RegisterOpcode<0xE1, Instr<POP, Register<HL>, void>>();
-    RegisterOpcode<0xE2, Instr<LDH, ToAddrFF00<Register<C>>, Register<A>>>();
+    RegisterOpcode<0xE2, Instr<LD, ToAddrFF00<Register<C>>, Register<A>>>();
     // 0xE3 xxxxxxxxxxxxxxxxxxxxxxxxxx
     // 0xE4 xxxxxxxxxxxxxxxxxxxxxxxxxx
     RegisterOpcode<0xE5, Instr<PUSH, Register<HL>, void>>();
     RegisterOpcode<0xE6, Instr<AND, Register<A>, NextByte>>();
     RegisterOpcode<0xE7, Instr<RST20, void, void>>();
-    RegisterOpcode<0xE8, Instr<ADD, Register<SP>, NextByte>>(); // FIXME
-    RegisterOpcode<0xE9, Instr<JP, ToAddr<Register<HL>>, void>>();
+    RegisterOpcode<0xE8, Instr<ADDO, Register<SP>, NextByte>>();  // FIXME
+    RegisterOpcode<0xE9, Instr<JP, Register<HL>, void>>();
     RegisterOpcode<0xEA, Instr<LD, ToAddr<NextWord>, Register<A>>>();
     // 0xEB xxxxxxxxxxxxxxxxxxxxxxxxxxx
     // 0xEC xxxxxxxxxxxxxxxxxxxxxxxxxxx
     // 0xED xxxxxxxxxxxxxxxxxxxxxxxxxxx
     RegisterOpcode<0xEE, Instr<XOR, Register<A>, NextByte>>();
     RegisterOpcode<0xEF, Instr<RST28, void, void>>();
-    RegisterOpcode<0xF0, Instr<LDH, Register<A>, ToAddrFF00<NextByte>>>();
+    RegisterOpcode<0xF0, Instr<LD, Register<A>, ToAddrFF00<NextByte>>>();
     RegisterOpcode<0xF1, Instr<POP, Register<AF>, void>>();
-    // 0xF2 xxxxxxxxxxxxxxxxxxxxxxxxxxx
+    RegisterOpcode<0xF2, Instr<LD, Register<A>, ToAddrFF00<Register<C>>>>();
     RegisterOpcode<0xF3, Instr<DI, void, void>>();
     // 0xF4 xxxxxxxxxxxxxxxxxxxxxxxxxxx
     RegisterOpcode<0xF5, Instr<PUSH, Register<AF>, void>>();
     RegisterOpcode<0xF6, Instr<OR, Register<A>, NextByte>>();
     RegisterOpcode<0xF7, Instr<RST30, void, void>>();
     RegisterOpcode<0xF8, Instr<LDHL, Register<SP>, NextByte>>();
-    RegisterOpcode<0xF9, Instr<LD, Register<SP>, Register<HL>>>();
+    RegisterOpcode<0xF9, Instr<LDw, Register<SP>, Register<HL>>>();
     RegisterOpcode<0xFA, Instr<LD, Register<A>, ToAddr<NextWord>>>();
     RegisterOpcode<0xFB, Instr<EI, void, void>>();
     // 0xFC xxxxxxxxxxxxxxxxxxxxxxxxx
     // 0xFD xxxxxxxxxxxxxxxxxxxxxxxxx
     RegisterOpcode<0xFE, Instr<CP, Register<A>, NextByte>>();
     RegisterOpcode<0xFF, Instr<RST38, void, void>>();
+
+    RegisterCBOpcode<0x00, Instr<RLC, Register<B>, void>>();
+    RegisterCBOpcode<0x01, Instr<RLC, Register<C>, void>>();
+    RegisterCBOpcode<0x02, Instr<RLC, Register<D>, void>>();
+    RegisterCBOpcode<0x03, Instr<RLC, Register<E>, void>>();
+    RegisterCBOpcode<0x04, Instr<RLC, Register<H>, void>>();
+    RegisterCBOpcode<0x05, Instr<RLC, Register<L>, void>>();
+    RegisterCBOpcode<0x06, Instr<RLC, ToAddr<Register<HL>>, void>>();
+    RegisterCBOpcode<0x07, Instr<RLC, Register<A>, void>>();
+    RegisterCBOpcode<0x08, Instr<RRC, Register<B>, void>>();
+    RegisterCBOpcode<0x09, Instr<RRC, Register<C>, void>>();
+    RegisterCBOpcode<0x0A, Instr<RRC, Register<D>, void>>();
+    RegisterCBOpcode<0x0B, Instr<RRC, Register<E>, void>>();
+    RegisterCBOpcode<0x0C, Instr<RRC, Register<H>, void>>();
+    RegisterCBOpcode<0x0D, Instr<RRC, Register<L>, void>>();
+    RegisterCBOpcode<0x0E, Instr<RRC, ToAddr<Register<HL>>, void>>();
+    RegisterCBOpcode<0x0F, Instr<RRC, Register<A>, void>>();
+    RegisterCBOpcode<0x10, Instr<RL, Register<B>, void>>();
+    RegisterCBOpcode<0x11, Instr<RL, Register<C>, void>>();
+    RegisterCBOpcode<0x12, Instr<RL, Register<D>, void>>();
+    RegisterCBOpcode<0x13, Instr<RL, Register<E>, void>>();
+    RegisterCBOpcode<0x14, Instr<RL, Register<H>, void>>();
+    RegisterCBOpcode<0x15, Instr<RL, Register<L>, void>>();
+    RegisterCBOpcode<0x16, Instr<RL, ToAddr<Register<HL>>, void>>();
+    RegisterCBOpcode<0x17, Instr<RL, Register<A>, void>>();
+    RegisterCBOpcode<0x18, Instr<RR, Register<B>, void>>();
+    RegisterCBOpcode<0x19, Instr<RR, Register<C>, void>>();
+    RegisterCBOpcode<0x1A, Instr<RR, Register<D>, void>>();
+    RegisterCBOpcode<0x1B, Instr<RR, Register<E>, void>>();
+    RegisterCBOpcode<0x1C, Instr<RR, Register<H>, void>>();
+    RegisterCBOpcode<0x1D, Instr<RR, Register<L>, void>>();
+    RegisterCBOpcode<0x1E, Instr<RR, ToAddr<Register<HL>>, void>>();
+    RegisterCBOpcode<0x1F, Instr<RR, Register<A>, void>>();
+    RegisterCBOpcode<0x20, Instr<SLA, Register<B>, void>>();
+    RegisterCBOpcode<0x21, Instr<SLA, Register<C>, void>>();
+    RegisterCBOpcode<0x22, Instr<SLA, Register<D>, void>>();
+    RegisterCBOpcode<0x23, Instr<SLA, Register<E>, void>>();
+    RegisterCBOpcode<0x24, Instr<SLA, Register<H>, void>>();
+    RegisterCBOpcode<0x25, Instr<SLA, Register<L>, void>>();
+    RegisterCBOpcode<0x26, Instr<SLA, ToAddr<Register<HL>>, void>>();
+    RegisterCBOpcode<0x27, Instr<SLA, Register<A>, void>>();
+
+    RegisterCBOpcode<0x37, Instr<SWAP, Register<A>, void>>();
+    RegisterCBOpcode<0x38, Instr<SRL, Register<B>, void>>();
+
+    RegisterCBOpcode<0x3f, Instr<SRL, Register<A>, void>>();
+
+    RegisterCBOpcode<0x42, Instr<BIT, I<0>, Register<D>>>();
+
+    RegisterCBOpcode<0x4F, Instr<BIT, I<1>, Register<A>>>();
+
+    RegisterCBOpcode<0x7F, Instr<BIT, I<7>, Register<A>>>();
+
+    RegisterCBOpcode<0x87, Instr<RES, I<0>, Register<A>>>();
+
+    RegisterCBOpcode<0x9E, Instr<RES, I<3>, ToAddr<Register<HL>>>>();
 }
 
-void Z80::Process()
-{
-#if 1
-    while (true)
-    {
-        int c = _pc;
-        std::cout << "0x"<< std::hex << _pc << "\t" << static_cast<unsigned int>(_addr.Get(_pc)) << "\t";
+void Z80::RunOpcode(byte op) { _instr[op](this); }
+void Z80::RunCBOpcode(byte op) { _cb_instr[op](this); }
 
-        if (_interrupts)
-            ProcessInterrupts();
+void Z80::Process() {
+    while (true) {
+        cinstr << "0x" << std::hex << _pc.u << "\t" << int(_addr.Get(_pc.u).u)
+               << "\t";
+        PrintInstr(_addr.Get(_pc.u).u, this);
+        RunOpcode(_addr.Get(_pc.u).u);
 
-        _print[_addr.Get(_pc)](c, _addr);
-        _instr[_addr.Get(_pc)](this);
-        ++_pc;
-        //std::cin.get();
         _vid.Clock();
+        _lk.Clock();
+
+        if (_vid.vblank_int()) {
+            _addr.Set(0xFF0F, SetBit(_addr.Get(0xFF0F).u, 0));
+            cevent << "VBlank INT SET\n";
+        }
+        if (_vid.stat_int()) {
+            _addr.Set(0xFF0F, SetBit(_addr.Get(0xFF0F).u, 1));
+        }
+        if (_lk.transferred()) {
+            _addr.Set(0xFF0F, SetBit(_addr.Get(0xFF0F).u, 3));
+        }
+
+        ProcessInterrupts();
     }
-#else
-    for (int i = 0 ; i < 65535 ; ++i)
-    {
-        try
-        {
-        std::cout <<std::hex << "0x" << i << "/" <<std::dec<< i << "\t" << static_cast<unsigned int>(_addr.Get(i)) << "\t";
-        _print[_addr.Get(i)](i, _addr);
-        } catch (std::exception) { }
-    }
-#endif
 }
 
-void Z80::ProcessInterrupts()
-{
-    byte ints = _addr.Get(0xFFFF) & _addr.Get(0xFF0F) & _interrupts;
+void Z80::PrintInstr(uint8_t op, Z80* p) { _print[op](p); }
+void Z80::PrintCBInstr(uint8_t op, Z80* p) { _cb_print[op](p); }
 
-    if (ints & 1_b)
-    {
-        _addr.Set(0xFF0F, ints & ~1);
+void Z80::ProcessInterrupts() {
+    byte ints = _addr.Get(0xFFFF).u & _addr.Get(0xFF0F).u & _interrupts;
+
+    if (ints & 1) {
+        cevent << "VBlank int!\n";
+        _addr.Set(0xFF0F, ClearBit(_addr.Get(0xFF0F).u, 0));
         RST40<void, void>::Do(this);
-    }
-    else if (ints & 10_b)
-    {
-        _addr.Set(0xFF0F, ints & ~10_b);
+    } else if (ints & 0b10) {
+        cevent << "STAT int!\n";
+        _addr.Set(0xFF0F, ClearBit(_addr.Get(0xFF0F).u, 1));
         RST48<void, void>::Do(this);
-    }
-    else if (ints & 100_b)
-    {
-        _addr.Set(0xFF0F, ints & ~100_b);
+    } else if (ints & 0b100) {
+        _addr.Set(0xFF0F, ClearBit(_addr.Get(0xFF0F).u, 2));
         RST50<void, void>::Do(this);
-    }
-    else if (ints & 1000_b)
-    {
-        _addr.Set(0xFF0F, ints & ~1000_b);
+    } else if (ints & 0b1000) {
+        _addr.Set(0xFF0F, ClearBit(_addr.Get(0xFF0F).u, 3));
         RST58<void, void>::Do(this);
-    }
-    else if (ints & 10000_b)
-    {
-        _addr.Set(0xFF0F, ints & ~100000_b);
+    } else if (ints & 0b10000) {
+        _addr.Set(0xFF0F, ClearBit(_addr.Get(0xFF0F).u, 4));
         RST60<void, void>::Do(this);
     }
 }
 
-    template <unsigned char Opcode, class Inst>
-void Z80::RegisterOpcode()
-{
+template <unsigned char Opcode, class Inst>
+void Z80::RegisterOpcode() {
     _instr[Opcode] = std::function<void(Z80*)>(&Inst::Do);
-    _print[Opcode] = std::function<void(int&, AddressBus&)>(&Inst::Print);
+    _print[Opcode] = std::function<void(Z80*)>(&Inst::Print);
 }
 
-void Z80::set_interrupts(byte enable)
-{
-    _interrupts = enable;
+template <unsigned char Opcode, class Inst>
+void Z80::RegisterCBOpcode() {
+    _cb_instr[Opcode] = std::function<void(Z80*)>(&Inst::Do);
+    _cb_print[Opcode] = std::function<void(Z80*)>(&Inst::Print);
 }
 
-void Z80::Dump() const
-{
-    std::cout << std::hex
-        << "A = 0x" << (int)Register<A>::Get(this) << "\n"
-        << "B = 0x" << (int)Register<B>::Get(this) << "\n"
-        << "C = 0x" << (int)Register<C>::Get(this) << "\n"
-        << "D = 0x" << (int)Register<D>::Get(this) << "\n"
-        << "E = 0x" << (int)Register<E>::Get(this) << "\n"
-        << "F = 0x" << (int)Register<F>::Get(this) << "\n"
-        << "H = 0x" << (int)Register<H>::Get(this) << "\n"
-        << "L = 0x" << (int)Register<L>::Get(this) << "\n"
-        << "AF = 0x" << Register<AF>::Get(this) << "\n"
-        << "BC = 0x" << Register<BC>::Get(this) << "\n"
-        << "DE = 0x" << Register<DE>::Get(this) << "\n"
-        << "HL = 0x" << Register<HL>::Get(this) << "\n"
-        << "SP = 0x" << Register<SP>::Get(this) << "\n"
-        << "PC = 0x" << Register<PC>::Get(this) << "\n" ;
+void Z80::set_interrupts(byte enable) { _interrupts = enable; }
+
+void Z80::Dump() const {
+    cerror << std::hex << "A = " << Register<A>::Get(this) << "\n"
+           << "B = " << Register<B>::Get(this) << "\n"
+           << "C = " << Register<C>::Get(this) << "\n"
+           << "D = " << Register<D>::Get(this) << "\n"
+           << "E = " << Register<E>::Get(this) << "\n"
+           << "F = " << Register<F>::Get(this) << "\n"
+           << "H = " << Register<H>::Get(this) << "\n"
+           << "L = " << Register<L>::Get(this) << "\n"
+           << "AF = " << Register<AF>::GetW(this) << "\n"
+           << "BC = " << Register<BC>::GetW(this) << "\n"
+           << "DE = " << Register<DE>::GetW(this) << "\n"
+           << "HL = " << Register<HL>::GetW(this) << "\n"
+           << "SP = " << Register<SP>::GetW(this) << "\n"
+           << "PC = " << Register<PC>::GetW(this) << "\n";
 }

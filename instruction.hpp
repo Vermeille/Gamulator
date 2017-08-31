@@ -1,566 +1,760 @@
 #pragma once
+
 #include "registers.hpp"
-#include <type_traits>
+#include "utils.h"
+
 #include <iostream>
+#include <type_traits>
 
-struct NextWord
-{
-    static word Get(Z80* p)
-    {
-        ++p->_pc;
-        int w = p->_addr.Get(p->_pc);
-        ++p->_pc;
-        return w + (p->_addr.Get(p->_pc) << 8);
+struct NextWord {
+    static Data16 GetW(Z80* p) {
+        Data16 w;
+        p->next_opcode();
+        w.bytes.l = p->_addr.Get(p->_pc.u);
+        p->next_opcode();
+        w.bytes.h = p->_addr.Get(p->_pc.u);
+        return w;
     }
 
-    static void Print(int& c, AddressBus& code)
-    {
-        ++c;
-        int w = code.Get(c);
-        ++c;
-        w += code.Get(c) << 8;
-        std::cout << "0x" << std::hex << reinterpret_cast<uint16_t&>(w);
+    static void Print(Z80* p) {
+        Data16 w;
+        w.bytes.l = p->_addr.Get(Z80::Register<Z80::PC>::GetW(p).u + 1);
+        w.bytes.h = p->_addr.Get(Z80::Register<Z80::PC>::GetW(p).u + 2);
+        cinstr << w;
     }
 };
 
-struct NextByte
-{
-    static byte Get(Z80* p)
-    {
-        ++p->_pc;
-        return p->_addr.Get(p->_pc);
+struct NextByte {
+    static Data8 Get(Z80* p) {
+        p->next_opcode();
+        return p->_addr.Get(p->_pc.u);
     }
-    static void Print(int& c, AddressBus& code)
-    {
-        ++c;
-        byte b = code.Get(c);
-        std::cout << "0x" << std::hex << static_cast<int>(b)
-            << "/"<< std::dec << static_cast<int>(b) << "u/"
-            << static_cast<int>(reinterpret_cast<char&>(b));
+    static void Print(Z80* p) {
+        Data8 b = p->_addr.Get(Z80::Register<Z80::PC>::GetW(p).u + 1);
+        cinstr << b;
     }
 };
 
 template <class Addr>
-struct ToAddr
-{
-    static inline word GetW(Z80* p)
-    {
-        auto addr = Addr::Get(p);
-        word val = (p->_addr.Get(addr + 1) << 8) + p->_addr.Get(addr);
-        std::cout << std::hex << "read word " << int(val) << " at " << addr
-            << "(" << p->_addr.Print(addr) << ")" << std::endl;
-        return val;
+struct ToAddr {
+    static inline Data16 GetW(Z80* p) {
+        auto addr = Addr::GetW(p).u;
+        Data16 w;
+        w.bytes.l = p->_addr.Get(addr);
+        w.bytes.h = p->_addr.Get(addr + 1);
+        cinstr << std::hex << "read word " << w << " at " << std::hex << addr
+               << "(" << p->_addr.Print(addr) << ")" << std::endl;
+        return w;
     }
 
-    static inline void SetW(Z80* p, word val)
-    {
-        auto addr = Addr::Get(p);
-        p->_addr.Set(addr, val & 0xFF);
-        p->_addr.Set(addr + 1, val >> 8);
-        std::cout << std::hex << "set word " << int(val) << " at " << addr
-            << "(" << p->_addr.Print(addr) << ")" << std::endl;
+    static inline void SetW(Z80* p, Data16 val) {
+        auto addr = Addr::GetW(p).u;
+        p->_addr.Set(addr, uint8_t(val.u & 0xFF));
+        p->_addr.Set(addr + 1, uint8_t(val.u >> 8));
+        cinstr << std::hex << "set word " << val << " at " << std::hex << addr
+               << "(" << p->_addr.Print(addr) << ")" << std::endl;
     }
 
-    static inline byte Get(Z80* p)
-    {
-        auto addr = Addr::Get(p);
+    static inline Data8 Get(Z80* p) {
+        word addr = Addr::GetW(p).u;
         auto b = p->_addr.Get(addr);
-        std::cout << std::hex << "read byte " << int(b) << " at " << addr << "("
-            << p->_addr.Print(addr) << ")" << std::endl;
+        cinstr << std::hex << "  read byte " << b << " at " << std::hex << addr
+               << "(" << p->_addr.Print(addr) << ")" << std::endl;
         return b;
     }
 
-    static inline void Set(Z80* p, byte val)
-    {
-        auto addr = Addr::Get(p);
+    static inline void Set(Z80* p, Data8 val) {
+        auto addr = Addr::GetW(p).u;
         p->_addr.Set(addr, val);
-        std::cout << std::hex << "set byte " << int(val) << " at " << addr << "("
-            << p->_addr.Print(addr) << ")" << std::endl;
+        cinstr << "  set byte " << std::hex << val << " at " << std::hex << addr
+               << "(" << p->_addr.Print(addr) << ")" << std::endl;
     }
 
-    static void Print(int& c, AddressBus& code)
-    {
-        std::cout << "(";
-        Addr::Print(c, code);
-        std::cout << ")";
+    static void Print(Z80* p) {
+        cinstr << "(";
+        Addr::Print(p);
+        cinstr << ")";
     }
 };
 
 template <class Addr>
-struct ToAddrFF00
-{
-    static inline byte Get(Z80* p)
-    {
-        byte offset = Addr::Get(p);
-        auto addr = 0xFF00 + reinterpret_cast<unsigned char&>(offset);
+struct ToAddrFF00 {
+    static inline Data8 Get(Z80* p) {
+        Data8 offset = Addr::Get(p);
+        auto addr = 0xFF00 + offset.u;
         auto b = p->_addr.Get(addr);
 
-        std::cout << std::hex << "  read byte " << int(b) << " at " << (addr)
-            << "(" << p->_addr.Print(addr) << ")" << std::endl;
+        cinstr << std::hex << "  read byte " << int(b.u) << " at " << addr
+               << "(" << p->_addr.Print(addr) << ")" << std::endl;
 
         return b;
     }
 
-    static inline void Set(Z80* p, byte val)
-    {
-        byte offset = Addr::Get(p);
-        auto addr = 0xFF00 + reinterpret_cast<unsigned char&>(offset);
+    static inline void Set(Z80* p, Data8 val) {
+        Data8 offset = Addr::Get(p);
+        auto addr = 0xFF00 + offset.u;
         p->_addr.Set(addr, val);
-        std::cout << std::hex << "  set byte " << int(val) << " at " << (addr)
-            << "(" << p->_addr.Print(addr) << ")" << std::endl;
+        cinstr << std::hex << "  set byte " << int(val.u) << " at " << addr
+               << "(" << p->_addr.Print(addr) << ")" << std::endl;
     }
 
-    static void Print(int& c, AddressBus& code)
-    {
-        std::cout << "(0xFF00 + ";
-        Addr::Print(c, code);
-        std::cout << ")";
+    static void Print(Z80* p) {
+        cinstr << "(0xFF00 + ";
+        Addr::Print(p);
+        cinstr << ")";
     }
 };
 
+template <int X>
+struct I {
+    static inline Data8 Get() { return uint8_t(X); }
+    static inline Data8 Get(Z80*) { return uint8_t(X); }
+    static inline Data16 GetW() { return uint16_t(X); }
+    static inline Data16 GetW(Z80*) { return uint16_t(X); }
+};
+
+template <class, class>
+struct DAA {
+    static void Do(Z80* p) {
+        auto a = Z80::Register<Z80::A>::Get(p);
+        if ((a.u & 0x0F) > 9 || p->hcarry_f()) {
+            a.u += 6;
+            if ((a.u & 0xF0) > 0x90 || p->carry_f()) {
+                a.u += 0x60;
+                p->set_carry_f(true);
+            } else {
+                p->set_carry_f(false);
+            }
+        } else {
+            p->set_carry_f(false);
+        }
+        p->set_hcarry_f(false);
+        p->set_zero_f(a.u == 0);
+        Z80::Register<Z80::A>::Set(p, a);
+        p->next_opcode();
+    }
+
+    static void Print(Z80*) { cinstr << "daa\n"; }
+};
+
 template <class Val, class sdfs>
-struct RLC
-{
-    static void Do(Z80* p)
-    {
-        int res = Val::Get(p) << 1;
-        res += res >> 8;
-        word flags = (res >> 8) << 4;
-        res &= 0xFF;
+struct RLC {
+    static void Do(Z80* p) {
+        Data8 res = Val::Get(p);
+
+        res.u = (res.u << 1) | ((res.u >> 7) & 1);
+
+        p->set_zero_f(res.u == 0);
+        p->set_sub_f(false);
+        p->set_hcarry_f(false);
+        p->set_carry_f(res.u & 1);
+
         Val::Set(p, res);
-        Z80::Register<Z80::F>::Set(p, flags);
+        p->next_opcode();
     }
 
-    static void Print(int& c, AddressBus& code)
-    {
-        std::cout << "rlc ";
-        Val::Print(c, code);
-        std::cout << std::endl;
+    static void Print(Z80* p) {
+        cinstr << "rlc ";
+        Val::Print(p);
+        cinstr << std::endl;
     }
 };
 
 template <class Val, class sdfs>
-struct RRC
-{
-    static void Do(Z80* p)
-    {
-        int res = Val::Get(p);
-        word flags = (res % 2) << 4;
-        res = (res >> 1) + ((res % 2) << 7);
+struct RRC {
+    static void Do(Z80* p) {
+        Data8 res = Val::Get(p);
+
+        res.u = (res.u >> 1) | ((res.u & 1) << 7);
+
+        p->set_zero_f(res.u == 0);
+        p->set_sub_f(false);
+        p->set_hcarry_f(false);
+        p->set_carry_f(res.u >> 7);
+
         Val::Set(p, res);
-        Z80::Register<Z80::F>::Set(p, flags);
+        p->next_opcode();
     }
 
-    static void Print(int& c, AddressBus& code)
-    {
-        std::cout << "rrc ";
-        Val::Print(c, code);
-        std::cout << std::endl;
-    }
-};
-
-template <class Val, class sdfs>
-struct RL
-{
-    static void Do(Z80* p)
-    {
-        int res = Val::Get(p) << 1;
-        word flags = (res >> 8) << 4;
-        res += (Z80::Register<Z80::F>::Get(p) >> 4);
-        Val::Set(p, res & 0xFF);
-        Z80::Register<Z80::F>::Set(p, flags);
-    }
-
-    static void Print(int& c, AddressBus& code)
-    {
-        std::cout << "rl ";
-        Val::Print(c, code);
-        std::cout << std::endl;
+    static void Print(Z80* p) {
+        cinstr << "rrc ";
+        Val::Print(p);
+        cinstr << std::endl;
     }
 };
 
 template <class Val, class sdfs>
-struct RR
-{
-    static void Do(Z80* p)
-    {
-        int res = Val::Get(p);
-        word flags = res % 2;;
-        res += (Z80::Register<Z80::F>::Get(p) >> 4) << 7;
+struct RL {
+    static void Do(Z80* p) {
+        Data8 res = Val::Get(p);
+
+        p->set_carry_f(res.u >> 7);
+
+        res.u = res.u << 1;
+
+        p->set_zero_f(res.u == 0);
+        p->set_sub_f(false);
+        p->set_hcarry_f(false);
+
         Val::Set(p, res);
-        Z80::Register<Z80::F>::Set(p, flags);
+        p->next_opcode();
     }
-    static void Print(int& c, AddressBus& code)
-    {
-        std::cout << "rr ";
-        Val::Print(c, code);
-        std::cout << std::endl;
+
+    static void Print(Z80* p) {
+        cinstr << "rl ";
+        Val::Print(p);
+        cinstr << std::endl;
+    }
+};
+
+template <class Val, class sdfs>
+struct RR {
+    static void Do(Z80* p) {
+        Data8 res = Val::Get(p);
+        int c = p->carry_f();
+
+        p->set_carry_f(res.u & 1);
+
+        res.u = (c << 7) | (res.u >> 1);
+
+        p->set_zero_f(res.u == 0);
+        p->set_sub_f(false);
+        p->set_hcarry_f(false);
+
+        Val::Set(p, res);
+        p->next_opcode();
+    }
+    static void Print(Z80* p) {
+        cinstr << "rr ";
+        Val::Print(p);
+        cinstr << std::endl;
+    }
+};
+
+template <class Bit, class A>
+struct RES {
+    static void Do(Z80* p) {
+        Data8 res = A::Get(p);
+        res.u = res.u & ~(1 << Bit::Get().u);
+        A::Set(p, res);
+        p->next_opcode();
+    }
+    static void Print(Z80* p) {
+        cinstr << "res " << Bit::Get() << ", ";
+        A::Print(p);
+        cinstr << std::endl;
+    }
+};
+
+template <class Bit, class A>
+struct SET {
+    static void Do(Z80* p) {
+        A::Set(p, A::Get(p).u | (1 << Bit::Get().u));
+        p->next_opcode();
+    }
+    static void Print(Z80* p) {
+        cinstr << "set " << Bit::Get() << ", ";
+        A::Print(p);
+        cinstr << std::endl;
+    }
+};
+
+template <class Bit, class R>
+struct BIT {
+    static void Do(Z80* p) {
+        p->set_zero_f(!(R::Get(p).u & (1 << Bit::Get().u)));
+        p->set_sub_f(0);
+        p->set_hcarry_f(1);
+        p->next_opcode();
+    }
+
+    static void Print(Z80* p) {
+        cinstr << "bit " << Bit::Get() << ", ";
+        R::Print(p);
+        cinstr << std::endl;
     }
 };
 
 template <class A, class>
-struct CPL
-{
-    static inline void Do(Z80* p)
-    {
-        A::Set(p, ~A::Get(p));
+struct CPL {
+    static inline void Do(Z80* p) {
+        A::Set(p, uint8_t(A::Get(p).u ^ 0xFF));
+
+        p->set_sub_f(1);
+        p->set_hcarry_f(1);
+        p->next_opcode();
     }
 
-    static void Print(int& c, AddressBus& code)
-    {
-        std::cout << "cpl ";
-        A::Print(c, code);
-        std::cout << std::endl;
-    }
-};
-
-template <class A, class>
-struct SCF
-{
-    static inline void Do(Z80*p)
-    {
-        Z80::Register<Z80::F>::Set(p, Z80::Register<Z80::F>::Get(p)
-                | 00010000_b);
-    }
-    static void Print(int&, AddressBus&)
-    {
-        std::cout << "scf ";
-        std::cout << std::endl;
+    static void Print(Z80* p) {
+        cinstr << "cpl ";
+        A::Print(p);
+        cinstr << std::endl;
     }
 };
 
 template <class A, class>
-struct CCF
-{
-    static inline void Do(Z80*p)
-    {
-        Z80::Register<Z80::F>::Set(p, Z80::Register<Z80::F>::Get(p)
-                & ~00010000_b);
+struct SCF {
+    static inline void Do(Z80* p) {
+        p->set_sub_f(false);
+        p->set_hcarry_f(false);
+        p->set_carry_f(true);
+        p->next_opcode();
     }
-    static void Print(int&, AddressBus&)
-    {
-        std::cout << "ccf ";
-        std::cout << std::endl;
-    }
-};
-
-template <class Val, class Garbage>
-struct INC
-{
-    static inline void Do(Z80* p)
-    {
-        Val::Set(p, Val::Get(p)+1);
-    }
-    static void Print(int& c, AddressBus& code)
-    {
-        std::cout << "inc ";
-        Val::Print(c, code);
-        std::cout << std::endl;
+    static void Print(Z80*) {
+        cinstr << "scf ";
+        cinstr << std::endl;
     }
 };
 
-template <class Val, class Garbage>
-struct DEC
-{
-    static inline void Do(Z80* p)
-    {
-        Val::Set(p, Val::Get(p)-1);
+template <class A, class>
+struct CCF {
+    static inline void Do(Z80* p) {
+        p->set_sub_f(false);
+        p->set_hcarry_f(false);
+        p->set_carry_f(p->carry_f() ^ 1);
+        p->next_opcode();
+    }
+    static void Print(Z80*) {
+        cinstr << "ccf ";
+        cinstr << std::endl;
+    }
+};
+
+template <class Val, class>
+struct INC {
+    static inline void Do(Z80* p) {
+        Data8 res = Val::Get(p);
+        res.u += 1;
+        Val::Set(p, res);
+
+        p->set_zero_f(res.u == 0);
+        p->set_sub_f(false);
+        p->set_carry_f(res.u == 0);
+        p->next_opcode();
+    }
+    static void Print(Z80* p) {
+        cinstr << "inc ";
+        Val::Print(p);
+        cinstr << std::endl;
+    }
+};
+
+template <class Val, class>
+struct INCw {
+    static inline void Do(Z80* p) {
+        Data16 res = Val::GetW(p);
+        res.u += 1;
+        Val::SetW(p, res);
+
+        p->set_zero_f(res.u == 0);
+        p->set_sub_f(false);
+        p->set_carry_f(res.u == 0);
+        p->next_opcode();
+    }
+    static void Print(Z80* p) {
+        cinstr << "inc ";
+        Val::Print(p);
+        cinstr << std::endl;
+    }
+};
+
+template <class Val, class>
+struct DEC {
+    static inline void Do(Z80* p) {
+        Data8 res = Val::Get(p);
+        res.u -= 1;
+        Val::Set(p, res);
+
+        p->set_zero_f(res.u == 0);
+        p->set_sub_f(1);
+        p->set_carry_f(res.u > 0);
+        p->next_opcode();
     }
 
-    static void Print(int& c, AddressBus& code)
-    {
-        std::cout << "dec ";
-        Val::Print(c, code);
-        std::cout << std::endl;
+    static void Print(Z80* p) {
+        cinstr << "dec ";
+        Val::Print(p);
+        cinstr << std::endl;
+    }
+};
+
+template <class Val, class>
+struct DECw {
+    static inline void Do(Z80* p) {
+        Data16 r = Val::GetW(p);
+        r.u -= 1;
+        Val::SetW(p, r);
+        p->next_opcode();
+    }
+
+    static void Print(Z80* p) {
+        cinstr << "dec ";
+        Val::Print(p);
+        cinstr << std::endl;
     }
 };
 
 template <class A, class B>
-struct ADD
-{
-    static void Do(Z80*p)
-    {
-        int res = B::Get(p) + A::Get(p);
+struct ADD {
+    static void Do(Z80* p) {
+        uint16_t res = A::Get(p).u + B::Get(p).u;
 
-        int flag = 0;
-        flag = (res == 0 ? (1 << 7) : 0);
-        flag += ((res >> 4) ? 1 << 5 : 0);
-        if (std::is_same<decltype(A::Get(p)), byte>::value)
-            flag += ((res >> 8) ? 1 << 4 : 0);
-        else
-            flag += ((res >> 16) ? 1 << 4 : 0);
-        Z80::Register<Z80::F>::Set(p, flag);
+        p->set_zero_f((res & 0xFF) == 0);
+        p->set_sub_f(false);
+        p->set_hcarry_f(false);  // FIXME
+        p->set_carry_f(res >> 8);
+
+        A::Set(p, uint8_t(res & 0xFF));
+        p->next_opcode();
+    }
+
+    static void Print(Z80* p) {
+        cinstr << "add ";
+        A::Print(p);
+        cinstr << ", ";
+        B::Print(p);
+        cinstr << std::endl;
+    }
+};
+
+template <class A, class B>
+struct ADDw {
+    static void Do(Z80* p) {
+        uint32_t res = A::GetW(p).u + B::GetW(p).u;
+
+        p->set_zero_f((res & 0xFFFF) == 0);
+        p->set_sub_f(false);
+        p->set_hcarry_f(false);  // FIXME
+        p->set_carry_f(res >> 16);
+
+        A::SetW(p, uint16_t(res & 0xFFFF));
+        p->next_opcode();
+    }
+
+    static void Print(Z80* p) {
+        cinstr << "add ";
+        A::Print(p);
+        cinstr << ", ";
+        B::Print(p);
+        cinstr << std::endl;
+    }
+};
+
+template <class A, class B>
+struct ADDO {
+    static void Do(Z80* p) {
+        Data16 res = A::GetW(p);
+        res.u = res.u + B::Get(p).s;
+
+        p->set_zero_f(res.u == 0);
+        p->set_sub_f(false);
+        p->set_hcarry_f(false);  // FIXME
+        p->set_carry_f(res.u >> 16);
+
+        A::SetW(p, res);
+        p->next_opcode();
+    }
+
+    static void Print(Z80* p) {
+        cinstr << "add ";
+        A::Print(p);
+        cinstr << ", ";
+        B::Print(p);
+        cinstr << std::endl;
+    }
+};
+
+template <class A, class B>
+struct ADC {
+    static void Do(Z80* p) {
+        uint16_t res = B::Get(p).u + A::Get(p).u + p->carry_f();
+
+        p->set_zero_f((res & 0xFF) == 0);
+        p->set_sub_f(false);
+        p->set_hcarry_f(false);  // FIXME
+        p->set_carry_f(res >> 8);
+
+        A::Set(p, uint8_t(res & 0xFF));
+        p->next_opcode();
+    }
+
+    static void Print(Z80* p) {
+        cinstr << "adc ";
+        A::Print(p);
+        cinstr << ", ";
+        B::Print(p);
+        cinstr << std::endl;
+    }
+};
+
+template <class A, class B>
+struct SUB {
+    static void Do(Z80* p) {
+        Data8 a = A::Get(p);
+        Data8 b = B::Get(p);
+        Data8 res;
+        res.s = a.s - b.s;
+
+        p->set_zero_f(res.u == 0);
+        p->set_hcarry_f(false);
+        p->set_sub_f(true);
+        p->set_carry_f(a.s < b.s);
+
         A::Set(p, res);
+        p->next_opcode();
     }
 
-    static void Print(int& c, AddressBus& code)
-    {
-        std::cout << "add ";
-        A::Print(c, code);
-        std::cout <<", ";
-        B::Print(c, code);
-        std::cout << std::endl;
+    static void Print(Z80* p) {
+        cinstr << "sub ";
+        A::Print(p);
+        cinstr << ", ";
+        B::Print(p);
+        cinstr << std::endl;
     }
 };
 
 template <class A, class B>
-struct ADC
-{
-    static void Do(Z80*p)
-    {
-        int res = B::Get(p) + A::Get(p)
-            + ((Z80::Register<Z80::F>::Get(p) & 00010000_b) >> 4);
+struct SBC {
+    static void Do(Z80* p) {
+        Data8 a = A::Get(p);
+        Data8 b = B::Get(p);
+        Data8 res;
+        res.s = a.s - b.s - p->carry_f();
 
-        int flag = 0;
-        flag = (res == 0 ? (1 << 7) : 0);
-        flag += ((res >> 4) ? 1 << 5 : 0);
-        if (std::is_same<decltype(A::Get(p)), byte>::value)
-            flag += ((res >> 8) ? 1 << 4 : 0);
-        else
-            flag += ((res >> 16) ? 1 << 4 : 0);
+        p->set_zero_f(res.u == 0);
+        p->set_hcarry_f(false);
+        p->set_sub_f(true);
+        p->set_carry_f(a.s < b.s + p->carry_f());
 
-        Z80::Register<Z80::F>::Set(p, flag);
         A::Set(p, res);
+        p->next_opcode();
     }
 
-    static void Print(int& c, AddressBus& code)
-    {
-        std::cout << "adc ";
-        A::Print(c, code);
-        std::cout <<", ";
-        B::Print(c, code);
-        std::cout << std::endl;
+    static void Print(Z80* p) {
+        cinstr << "sbc ";
+        A::Print(p);
+        cinstr << ", ";
+        B::Print(p);
+        cinstr << std::endl;
     }
 };
 
 template <class A, class B>
-struct SUB
-{
-    static void Do(Z80*p)
-    {
-        int res = A::Get(p) - B::Get(p);
+struct AND {
+    static void Do(Z80* p) {
+        uint8_t res = A::Get(p).u & B::Get(p).u;
 
-        int flag = 0;
-        flag = (res == 0 ? (1 << 7) : 0);
-        flag += 1 << 6;
-        flag += ((res >> 4) ? 1 << 5 : 0);
-        flag += ((res < 0) ? 1 << 4 : 0);
-        Z80::Register<Z80::F>::Set(p, flag);
+        p->set_zero_f(res == 0);
+        p->set_sub_f(false);
+        p->set_hcarry_f(true);
+        p->set_carry_f(false);
+
         A::Set(p, res);
+        p->next_opcode();
     }
 
-    static void Print(int& c, AddressBus& code)
-    {
-        std::cout << "sub ";
-        A::Print(c, code);
-        std::cout <<", ";
-        B::Print(c, code);
-        std::cout << std::endl;
+    static void Print(Z80* p) {
+        cinstr << "and ";
+        A::Print(p);
+        cinstr << ", ";
+        B::Print(p);
+        cinstr << std::endl;
     }
 };
 
 template <class A, class B>
-struct SBC
-{
-    static void Do(Z80*p)
-    {
-        int res = A::Get(p) - B::Get(p)
-            - (Z80::Register<Z80::F>::Get(p) & 00010000_b);
+struct XOR {
+    static void Do(Z80* p) {
+        uint8_t res = A::Get(p).u ^ B::Get(p).u;
 
-        int flag = 0;
-        flag = (res == 0 ? (1 << 7) : 0);
-        flag += 1 << 6;
-        flag += ((res >> 4) ? 1 << 5 : 0);
-        flag += ((res < 0) ? 1 << 4 : 0);
-        Z80::Register<Z80::F>::Set(p, flag);
+        p->set_zero_f(res == 0);
+        p->set_sub_f(false);
+        p->set_hcarry_f(false);
+        p->set_carry_f(false);
+
         A::Set(p, res);
+        p->next_opcode();
     }
 
-    static void Print(int& c, AddressBus& code)
-    {
-        std::cout << "sbc ";
-        A::Print(c, code);
-        std::cout <<", ";
-        B::Print(c, code);
-        std::cout << std::endl;
+    static void Print(Z80* p) {
+        cinstr << "xor ";
+        A::Print(p);
+        cinstr << ", ";
+        B::Print(p);
+        cinstr << std::endl;
     }
 };
 
 template <class A, class B>
-struct AND
-{
-    static void Do(Z80*p)
-    {
-        decltype(A::Get(p)) res = A::Get(p) & B::Get(p);
+struct OR {
+    static void Do(Z80* p) {
+        uint8_t res = A::Get(p).u | B::Get(p).u;
 
-        int flag = 0;
-        flag = (res == 0 ? (1 << 7) : 0);
-        flag += 1 << 5;
-        Z80::Register<Z80::F>::Set(p, flag);
+        p->set_zero_f(res == 0);
+        p->set_sub_f(false);
+        p->set_hcarry_f(false);
+        p->set_carry_f(false);
+
         A::Set(p, res);
+        p->next_opcode();
     }
 
-    static void Print(int& c, AddressBus& code)
-    {
-        std::cout << "and ";
-        A::Print(c, code);
-        std::cout <<", ";
-        B::Print(c, code);
-        std::cout << std::endl;
+    static void Print(Z80* p) {
+        cinstr << "or ";
+        A::Print(p);
+        cinstr << ", ";
+        B::Print(p);
+        cinstr << std::endl;
+    }
+};
+
+template <class A, class>
+struct SRL {
+    static void Do(Z80* p) {
+        Data8 a = A::Get(p);
+
+        p->set_sub_f(false);
+        p->set_hcarry_f(false);
+        p->set_carry_f(a.u & 1);
+
+        a.u = (a.u >> 1) & ~(1 << 7);
+        p->set_zero_f(a.u == 0);
+
+        A::Set(p, a);
+        p->next_opcode();
+    }
+    static void Print(Z80* p) {
+        cinstr << "srl ";
+        A::Print(p);
+        cinstr << std::endl;
+    }
+};
+
+template <class A, class>
+struct SLA {
+    static void Do(Z80* p) {
+        Data8 a = A::Get(p);
+
+        p->set_sub_f(false);
+        p->set_hcarry_f(false);
+        p->set_carry_f(GetBit(a.u, 7));
+
+        a.u = a.u << 1;
+        p->set_zero_f(a.u);
+
+        A::Set(p, a);
+        p->next_opcode();
+    }
+    static void Print(Z80* p) {
+        cinstr << "sla ";
+        A::Print(p);
+        cinstr << std::endl;
     }
 };
 
 template <class A, class B>
-struct XOR
-{
-    static void Do(Z80*p)
-    {
-        decltype(A::Get(p)) res = A::Get(p) ^ B::Get(p);
+struct CP {
+    static void Do(Z80* p) {
+        auto a = A::Get(p).u;
+        auto b = B::Get(p).u;
 
-        int flag = 0;
-        flag = (res == 0 ? (1 << 7) : 0);
-        Z80::Register<Z80::F>::Set(p, flag);
+        p->set_zero_f(a == b);
+        p->set_sub_f(true);
+        p->set_hcarry_f(false);
+        p->set_carry_f(a < b);
+        p->next_opcode();
+    }
+
+    static void Print(Z80* p) {
+        cinstr << "cp ";
+        A::Print(p);
+        cinstr << ", ";
+        B::Print(p);
+        cinstr << std::endl;
+    }
+};
+
+template <class A, class>
+struct SWAP {
+    static void Do(Z80* p) {
+        Data8 res = A::Get(p);
+        res.u = ((res.u & 0x0F) << 4) | ((res.u & 0xF0) >> 4);
         A::Set(p, res);
+
+        p->set_zero_f(res.u == 0);
+        p->set_sub_f(false);
+        p->set_hcarry_f(false);
+        p->set_carry_f(false);
+        p->next_opcode();
     }
-
-    static void Print(int& c, AddressBus& code)
-    {
-        std::cout << "xor ";
-        A::Print(c, code);
-        std::cout <<", ";
-        B::Print(c, code);
-        std::cout << std::endl;
-    }
-};
-
-template <class A, class B>
-struct OR
-{
-    static void Do(Z80*p)
-    {
-        decltype(A::Get(p)) res = A::Get(p) | B::Get(p);
-
-        int flag = 0;
-        flag = (res == 0 ? (1 << 7) : 0);
-        Z80::Register<Z80::F>::Set(p, flag);
-        A::Set(p, res);
-    }
-
-    static void Print(int& c, AddressBus& code)
-    {
-        std::cout << "or ";
-        A::Print(c, code);
-        std::cout <<", ";
-        B::Print(c, code);
-        std::cout << std::endl;
+    static void Print(Z80* p) {
+        cinstr << "swap ";
+        A::Print(p);
+        cinstr << std::endl;
     }
 };
 
-template <class A, class B>
-struct CP
-{
-    static void Do(Z80*p)
-    {
-        int res = A::Get(p) - B::Get(p);
-
-        int flag = 0;
-        flag = (res == 0 ? (1 << 7) : 0);
-        flag += 1 << 6;
-        flag += ((res >> 4) ? 1 << 5 : 0);
-        flag += ((res < 0) ? 1 << 4 : 0);
-        Z80::Register<Z80::F>::Set(p, flag);
+template <class A, class>
+struct POP {
+    static void Do(Z80* p) {
+        A::SetW(p, ToAddr<Z80::Register<Z80::SP>>::GetW(p));
+        Data16 sp = Z80::Register<Z80::SP>::GetW(p);
+        sp.u += 2;
+        Z80::Register<Z80::SP>::SetW(p, sp);
+        p->next_opcode();
     }
-
-    static void Print(int& c, AddressBus& code)
-    {
-        std::cout << "cp ";
-        A::Print(c, code);
-        std::cout <<", ";
-        B::Print(c, code);
-        std::cout << std::endl;
+    static void Print(Z80* p) {
+        cinstr << "pop ";
+        A::Print(p);
+        cinstr << std::endl;
     }
 };
 
-struct True
-{
-    static inline bool Do(Z80*)
-    {
-        return true;
-    }
+struct True {
+    static inline bool Do(Z80*) { return true; }
 
-    static void Print(int&, AddressBus&)
-    {
-    }
+    static void Print(Z80*) {}
 };
 
-struct IfC
-{
-    static inline bool Do(Z80* p)
-    {
-        return Z80::Register<Z80::F>::Get(p) & 00010000_b;
-    }
+struct IfC {
+    static inline bool Do(Z80* p) { return p->carry_f(); }
 
-    static void Print(int&, AddressBus&)
-    {
-        std::cout << "C";
-    }
+    static void Print(Z80* p) { cinstr << "C (" << p->carry_f() << ")"; }
 };
 
-
-struct NC
-{
-    static inline bool Do(Z80* p)
-    {
-        return !(Z80::Register<Z80::F>::Get(p) & 00010000_b);
-    }
-    static void Print(int&, AddressBus&)
-    {
-        std::cout << "NC";
-    }
+struct NC {
+    static inline bool Do(Z80* p) { return !p->carry_f(); }
+    static void Print(Z80*) { cinstr << "NC"; }
 };
 
-struct IfZ
-{
-    static inline bool Do(Z80* p)
-    {
-        return Z80::Register<Z80::F>::Get(p) & 10000000_b;
-    }
-    static void Print(int&, AddressBus&)
-    {
-        std::cout << "Z";
-    }
+struct IfZ {
+    static inline bool Do(Z80* p) { return p->zero_f(); }
+    static void Print(Z80* p) { cinstr << "Z (" << p->zero_f() << ")"; }
 };
 
-
-struct NZ
-{
-    static inline bool Do(Z80* p)
-    {
-        return !(Z80::Register<Z80::F>::Get(p) & 10000000_b);
-    }
-    static void Print(int&, AddressBus&)
-    {
-        std::cout << "NZ";
-    }
+struct NZ {
+    static inline bool Do(Z80* p) { return p->zero_f() == false; }
+    static void Print(Z80*) { cinstr << "NZ"; }
 };
 
-template <class Test, class A, class fghdl>
-struct JR_Impl
-{
-    static void Do(Z80* p)
-    {
-        byte jmp = A::Get(p);
-        if (Test::Do(p))
-            Z80::Register<Z80::PC>::Set(p,
-                Z80::Register<Z80::PC>::Get(p) + reinterpret_cast<char&>(jmp));
+template <class Test, class A, class>
+struct JR_Impl {
+    static void Do(Z80* p) {
+        Data16 pc = Z80::Register<Z80::PC>::GetW(p);
+        Data8 jmp = A::Get(p);
+        pc.u += jmp.s + 2;
+        if (Test::Do(p)) {
+            Z80::Register<Z80::PC>::SetW(p, pc);
+        } else {
+            p->next_opcode();
+        }
     }
-    static void Print(int& c, AddressBus& code)
-    {
-        std::cout << "jr";
-        Test::Print(c, code);
-        std::cout << " ";
-        A::Print(c, code);
-        std::cout << std::endl;
+    static void Print(Z80* p) {
+        cinstr << "jr";
+        Test::Print(p);
+        cinstr << " ";
+        A::Print(p);
+        cinstr << std::endl;
     }
 };
 
@@ -580,21 +774,19 @@ template <class A, class B>
 using JRNC = JR_Impl<NC, A, B>;
 
 template <class Test, class A, class fghdl>
-struct RET_Impl
-{
-    static void Do(Z80* p)
-    {
-        if (Test::Do(p))
-        {
-            Z80::Register<Z80::PC>::Set(p, ToAddr<Z80::Register<Z80::SP>>::GetW(p));
-            Z80::Register<Z80::SP>::Set(p, Z80::Register<Z80::SP>::Get(p)+2);
+struct RET_Impl {
+    static void Do(Z80* p) {
+        if (Test::Do(p)) {
+            POP<Z80::Register<Z80::PC>, void>::Do(p);
+            --p->_pc.u;
+        } else {
+            p->next_opcode();
         }
     }
-    static void Print(int& c, AddressBus& code)
-    {
-        std::cout << "ret ";
-        Test::Print(c, code);
-        std::cout << std::endl;
+    static void Print(Z80* p) {
+        cinstr << "ret ";
+        Test::Print(p);
+        cinstr << std::endl;
     }
 };
 
@@ -614,21 +806,21 @@ template <class A, class B>
 using RETNC = RET_Impl<NC, A, B>;
 
 template <class Test, class A, class fghdl>
-struct JP_Impl
-{
-    static void Do(Z80* p)
-    {
-        word jmp = A::Get(p);
-        if (Test::Do(p))
-            Z80::Register<Z80::PC>::Set(p, jmp-1);
+struct JP_Impl {
+    static void Do(Z80* p) {
+        Data16 jmp = A::GetW(p);
+        if (Test::Do(p)) {
+            Z80::Register<Z80::PC>::SetW(p, jmp);
+        } else {
+            p->next_opcode();
+        }
     }
-    static void Print(int& c, AddressBus& code)
-    {
-        std::cout << "jp";
-        Test::Print(c, code);
-        std::cout << " ";
-        A::Print(c, code);
-        std::cout << std::endl;
+    static void Print(Z80* p) {
+        cinstr << "jp";
+        Test::Print(p);
+        cinstr << " ";
+        A::Print(p);
+        cinstr << std::endl;
     }
 };
 
@@ -647,25 +839,42 @@ using JPC = JP_Impl<IfC, A, B>;
 template <class A, class B>
 using JPNC = JP_Impl<NC, A, B>;
 
-template <class Test, class A, class fghdl>
-struct CALL_Impl
-{
-    static void Do(Z80* p)
-    {
-        if (Test::Do(p))
-        {
-            Z80::Register<Z80::SP>::Set(p, Z80::Register<Z80::SP>::Get(p) - 2);
-            ToAddr<Z80::Register<Z80::SP>>::SetW(p, Z80::Register<Z80::PC>::Get(p) + 2);
-            Z80::Register<Z80::PC>::Set(p, A::Get(p) - 1);
+template <class A, class>
+struct PUSH {
+    static void Do(Z80* p) {
+        Data16 sp = Z80::Register<Z80::SP>::GetW(p);
+        sp.u -= 2;
+        Z80::Register<Z80::SP>::SetW(p, sp);
+        ToAddr<Z80::Register<Z80::SP>>::SetW(p, A::GetW(p));
+        p->next_opcode();
+    }
+    static void Print(Z80* p) {
+        cinstr << "push ";
+        A::Print(p);
+        cinstr << std::endl;
+    }
+};
+
+template <class Test, class A, class>
+struct CALL_Impl {
+    static void Do(Z80* p) {
+        Data16 addr = A::GetW(p);
+        if (Test::Do(p)) {
+            p->next_opcode();  // move PAST the CALL so that we save the
+                               // instruction right after it
+            PUSH<Z80::Register<Z80::PC>, void>::Do(p);
+
+            Z80::Register<Z80::PC>::SetW(p, addr);
+        } else {
+            p->next_opcode();
         }
     }
-    static void Print(int& c, AddressBus& code)
-    {
-        std::cout << "call";
-        Test::Print(c, code);
-        std::cout << " ";
-        A::Print(c, code);
-        std::cout << std::endl;
+    static void Print(Z80* p) {
+        cinstr << "call";
+        Test::Print(p);
+        cinstr << " ";
+        A::Print(p);
+        cinstr << std::endl;
     }
 };
 
@@ -684,100 +893,68 @@ using CALLC = CALL_Impl<IfC, A, B>;
 template <class A, class B>
 using CALLNC = CALL_Impl<NC, A, B>;
 
-template <class A, class>
-struct POP
-{
-    static void Do(Z80* p)
-    {
-        A::Set(p, ToAddr<Z80::Register<Z80::SP>>::GetW(p));
-        Z80::Register<Z80::SP>::Set(p, Z80::Register<Z80::SP>::Get(p)+2);
-    }
-    static void Print(int& c, AddressBus& code)
-    {
-        std::cout << "pop ";
-        A::Print(c, code);
-        std::cout << std::endl;
-    }
-};
-
-template <class A, class>
-struct PUSH
-{
-    static void Do(Z80* p)
-    {
-        Z80::Register<Z80::SP>::Set(p, Z80::Register<Z80::SP>::Get(p)-2);
-        ToAddr<Z80::Register<Z80::SP>>::SetW(p, A::Get(p));
-    }
-    static void Print(int& c, AddressBus& code)
-    {
-        std::cout << "push ";
-        A::Print(c, code);
-        std::cout << std::endl;
-    }
-};
-
 template <class, class>
 struct Nop {};
 
 template <>
-void Z80::Instr<Nop, void, void>::Do(Z80*)
-{
+void Z80::Instr<Nop, void, void>::Do(Z80* p) {
+    p->next_opcode();
 }
 template <>
-void Z80::Instr<Nop, void, void>::Print(int&, AddressBus&)
-{
-    std::cout << "nop" << std::endl;
+void Z80::Instr<Nop, void, void>::Print(Z80*) {
+    cinstr << "nop" << std::endl;
 }
 
-
 template <class A, class B>
-struct LD
-{
-    static inline void Do(Z80* proc)
-    {
+struct LD {
+    static inline void Do(Z80* proc) {
         A::Set(proc, B::Get(proc));
+        proc->next_opcode();
     }
-    static void Print(int& c, AddressBus& code)
-    {
-        std::cout << "ld ";
-        A::Print(c, code);
-        std::cout << ", ";
-        B::Print(c, code);
-        std::cout << std::endl;
+    static void Print(Z80* p) {
+        cinstr << "ld ";
+        A::Print(p);
+        cinstr << ", ";
+        B::Print(p);
+        cinstr << std::endl;
     }
 };
 
 template <class A, class B>
-struct LDH
-{
-    static inline void Do(Z80* proc)
-    {
-        A::Set(proc, B::Get(proc));
+struct LDw {
+    static inline void Do(Z80* proc) {
+        A::SetW(proc, B::GetW(proc));
+        proc->next_opcode();
     }
-    static void Print(int& c, AddressBus& code)
-    {
-        std::cout << "ldh ";
-        A::Print(c, code);
-        std::cout << ", ";
-        B::Print(c, code);
-        std::cout << std::endl;
+    static void Print(Z80* p) {
+        cinstr << "ld ";
+        A::Print(p);
+        cinstr << ", ";
+        B::Print(p);
+        cinstr << std::endl;
     }
 };
 
 template <class A, class B>
-struct LDHL
-{
-    static inline void Do(Z80* proc)
-    {
-        Z80::Register<Z80::HL>::Set(proc, A::Get(proc) + B::Get(proc));
+struct LDHL {
+    static inline void Do(Z80* p) {
+        Data16 a = A::GetW(p);
+        Data8 offset = B::Get(p);
+        int res = a.u + offset.s;
+        a.u = res;
+        Z80::Register<Z80::HL>::SetW(p, a);
+        p->set_zero_f(false);
+        p->set_sub_f(false);
+        p->set_hcarry_f(false);
+        p->set_carry_f(res > 0xFFFF);
+        p->next_opcode();
     }
-    static void Print(int& c, AddressBus& code)
-    {
-        std::cout << "ldhl ";
-        A::Print(c, code);
-        std::cout << ", ";
-        B::Print(c, code);
-        std::cout << std::endl;
+    static void Print(Z80* p) {
+        cinstr << "ldhl ";
+        A::Print(p);
+        cinstr << ", ";
+        B::Print(p);
+        cinstr << std::endl;
     }
 };
 
@@ -785,38 +962,38 @@ template <class A, class B>
 struct LDD;
 
 template <class A, class B>
-struct LDD<ToAddr<A>, B>
-{
-    static inline void Do(Z80* proc)
-    {
-        ToAddr<A>::Set(proc, B::Get(proc));
-        A::Set(proc, 1 - A::Get(proc));
+struct LDD<ToAddr<A>, B> {
+    static inline void Do(Z80* proc) {
+        Data16 addr = A::GetW(proc);
+        ToAddr<A>::Set(proc, proc->_addr.Get(addr.u));
+        --addr.u;
+        A::SetW(proc, addr);
+        proc->next_opcode();
     }
-    static void Print(int& c, AddressBus& code)
-    {
-        std::cout << "ldd ";
-        A::Print(c, code);
-        std::cout << ", ";
-        B::Print(c, code);
-        std::cout << std::endl;
+    static void Print(Z80* p) {
+        cinstr << "ldd (";
+        A::Print(p);
+        cinstr << "), ";
+        B::Print(p);
+        cinstr << std::endl;
     }
 };
 
 template <class A, class B>
-struct LDD<A, ToAddr<B>>
-{
-    static inline void Do(Z80* proc)
-    {
-        A::Set(proc, ToAddr<B>::Get(proc));
-        B::Set(proc, 1 - B::Get(proc));
+struct LDD<A, ToAddr<B>> {
+    static inline void Do(Z80* proc) {
+        Data16 addr = B::GetW(proc);
+        A::Set(proc, proc->_addr.Get(addr.u));
+        --addr.u;
+        B::SetW(proc, addr);
+        proc->next_opcode();
     }
-    static void Print(int& c, AddressBus& code)
-    {
-        std::cout << "ldd ";
-        A::Print(c, code);
-        std::cout << ", ";
-        ToAddr<B>::Print(c, code);
-        std::cout << std::endl;
+    static void Print(Z80* p) {
+        cinstr << "ldd ";
+        A::Print(p);
+        cinstr << ", ";
+        ToAddr<B>::Print(p);
+        cinstr << std::endl;
     }
 };
 
@@ -824,98 +1001,82 @@ template <class A, class B>
 struct LDI;
 
 template <class A, class B>
-struct LDI<ToAddr<A>, B>
-{
-    static inline void Do(Z80* proc)
-    {
-        ToAddr<A>::Set(proc, B::Get(proc));
-        A::Set(proc, 1 + A::Get(proc));
+struct LDI<ToAddr<A>, B> {
+    static inline void Do(Z80* proc) {
+        Data16 addr = A::GetW(proc);
+        proc->_addr.Set(addr.u, B::Get(proc));
+        ++addr.u;
+        A::SetW(proc, addr);
+        proc->next_opcode();
     }
-    static void Print(int& c, AddressBus& code)
-    {
-        std::cout << "ldi ";
-        ToAddr<A>::Print(c, code);
-        std::cout << ", ";
-        B::Print(c, code);
-        std::cout << std::endl;
+    static void Print(Z80* p) {
+        cinstr << "ldi ";
+        ToAddr<A>::Print(p);
+        cinstr << ", ";
+        B::Print(p);
+        cinstr << std::endl;
     }
 };
 
 template <class A, class B>
-struct LDI<A, ToAddr<B>>
-{
-    static inline void Do(Z80* proc)
-    {
-        A::Set(proc, ToAddr<B>::Get(proc));
-        B::Set(proc, 1 + B::Get(proc));
+struct LDI<A, ToAddr<B>> {
+    static inline void Do(Z80* proc) {
+        Data16 addr = B::GetW(proc);
+        A::Set(proc, proc->_addr.Get(addr.u));
+        ++addr.u;
+        B::SetW(proc, addr);
+        proc->next_opcode();
     }
-    static void Print(int& c, AddressBus& code)
-    {
-        std::cout << "ldi ";
-        A::Print(c, code);
-        std::cout << ", ";
-        ToAddr<B>::Print(c, code);
-        std::cout << std::endl;
+    static void Print(Z80* p) {
+        cinstr << "ldi ";
+        A::Print(p);
+        cinstr << ", ";
+        ToAddr<B>::Print(p);
+        cinstr << std::endl;
     }
 };
 
 template <class, class>
-struct EI
-{
-    static inline void Do(Z80* p)
-    {
+struct EI {
+    static inline void Do(Z80* p) {
         p->set_interrupts(0xFF);
+        p->next_opcode();
     }
-    static void Print(int&, AddressBus&)
-    {
-        std::cout << "ei" << std::endl;
-    }
+    static void Print(Z80*) { cinstr << "ei" << std::endl; }
 };
 template <class, class>
-struct DI
-{
-    static inline void Do(Z80* p)
-    {
+struct DI {
+    static inline void Do(Z80* p) {
         p->set_interrupts(0);
+        p->next_opcode();
     }
-    static void Print(int&, AddressBus&)
-    {
-        std::cout << "di" << std::endl;
-    }
+    static void Print(Z80*) { cinstr << "di" << std::endl; }
 };
 
 typedef Z80::Instr<Nop, void, void> NOP;
 
 template <class, class>
-struct HALT
-{
-    static inline void Do(Z80* p)
-    {
-        //stupidly loop on the halt / do nothing
-        EI<void, void>::Do(p);
-        if (!p->_addr.Get(0xFF0F))
-            Z80::Register<Z80::PC>::Set(p, Z80::Register<Z80::PC>::Get(p) - 1);
+struct HALT {
+    static inline void Do(Z80* p) {
+        // stupidly loop on the halt / do nothing
+        p->set_interrupts(0xFF);
+        if (p->_addr.Get(0xFF0F).u != 0) {
+            p->next_opcode();
+        }
     }
-    static void Print(int&, AddressBus&)
-    {
-        std::cout << "halt" << std::endl;
-    }
+    static void Print(Z80*) { cinstr << "halt" << std::endl; }
 };
 
 template <int Addr, class, class>
-struct RST_Impl
-{
-    static void Do(Z80*p)
-    {
-        Z80::Register<Z80::SP>::Set(p, Z80::Register<Z80::SP>::Get(p) - 2);
-        ToAddr<Z80::Register<Z80::SP>>::SetW(p, Z80::Register<Z80::PC>::Get(p) + 2);
-        Z80::Register<Z80::PC>::Set(p, Addr - 1);
-        DI<void, void>::Do(p);
-        std::cout << "interrupt caught by " << std::hex << Addr << std::endl;
+struct RST_Impl {
+    static void Do(Z80* p) {
+        p->set_interrupts(0x00);
+        --p->_pc.u;
+        CALL<I<Addr>, void>::Do(p);
+        cinstr << "interrupt caught by " << std::hex << Addr << std::endl;
     }
-    static void Print(int&, AddressBus&)
-    {
-        std::cout << "rst 0x" << std::hex << Addr << std::endl;
+    static void Print(Z80*) {
+        cinstr << "rst 0x" << std::hex << Addr << std::endl;
     }
 };
 
@@ -959,29 +1120,29 @@ template <class A, class B>
 using RST60 = RST_Impl<0x60, A, B>;
 
 template <class, class>
-struct RETI
-{
-    static inline void Do(Z80* p)
-    {
+struct RETI {
+    static inline void Do(Z80* p) {
+        p->set_interrupts(0xFF);
         RET<void, void>::Do(p);
-        EI<void, void>::Do(p);
     }
-    static void Print(int&, AddressBus&)
-    {
-        std::cout << "reti" << std::endl;
-    }
+    static void Print(Z80*) { cinstr << "reti" << std::endl; }
 };
 
 template <class, class>
-struct Stop
-{
-    static inline void Do(Z80* p)
-    {
-        HALT<void, void>::Do(p);
-    }
-    static void Print(int&, AddressBus&)
-    {
-        std::cout << "stop"<< std::endl;
-    }
+struct STOP {
+    static inline void Do(Z80* p) { HALT<void, void>::Do(p); }
+    static void Print(Z80*) { cinstr << "stop" << std::endl; }
 };
 
+template <class, class>
+struct EXTENDED {
+    static inline void Do(Z80* p) {
+        p->next_opcode();
+        p->RunCBOpcode(p->_addr.Get(Z80::Register<Z80::PC>::GetW(p).u).u);
+    }
+    static void Print(Z80* p) {
+        cinstr << std::hex << int(p->_addr.Get(p->_pc.u + 1).u) << " ";
+        Z80::PrintCBInstr(p->_addr.Get(p->_pc.u + 1).u, p);
+        cinstr << "\n";
+    }
+};

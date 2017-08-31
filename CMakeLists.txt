@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.6)
 
 project(Gamulator CXX)
 
-set(CMAKE_CXX_FLAGS "-std=c++14 -Wall -Wextra")
+set(CMAKE_CXX_FLAGS "-std=c++14 -Wall -Wextra -ggdb3 -D_GLIBCXX_DEBUG")
 
 add_executable(emu
     addressable.h

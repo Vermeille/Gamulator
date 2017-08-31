@@ -187,10 +187,11 @@ template <class Val, class sdfs>
 struct RL {
     static void Do(Z80* p) {
         Data8 res = Val::Get(p);
+        int c = p->carry_f();
 
         p->set_carry_f(res.u >> 7);
 
-        res.u = res.u << 1;
+        res.u = res.u << 1 | c;
 
         p->set_zero_f(res.u == 0);
         p->set_sub_f(false);
@@ -278,7 +279,7 @@ struct BIT {
 template <class A, class>
 struct CPL {
     static inline void Do(Z80* p) {
-        A::Set(p, uint8_t(A::Get(p).u ^ 0xFF));
+        A::Set(p, uint8_t(~A::Get(p).u));
 
         p->set_sub_f(1);
         p->set_hcarry_f(1);
@@ -310,8 +311,8 @@ template <class A, class>
 struct CCF {
     static inline void Do(Z80* p) {
         p->set_sub_f(false);
-        p->set_hcarry_f(false);
-        p->set_carry_f(p->carry_f() ^ 1);
+        p->set_hcarry_f(!p->hcarry_f());
+        p->set_carry_f(!p->carry_f());
         p->next_opcode();
     }
     static void Print(Z80*) {
@@ -329,7 +330,6 @@ struct INC {
 
         p->set_zero_f(res.u == 0);
         p->set_sub_f(false);
-        p->set_carry_f(res.u == 0);
         p->next_opcode();
     }
     static void Print(Z80* p) {
@@ -345,10 +345,6 @@ struct INCw {
         Data16 res = Val::GetW(p);
         res.u += 1;
         Val::SetW(p, res);
-
-        p->set_zero_f(res.u == 0);
-        p->set_sub_f(false);
-        p->set_carry_f(res.u == 0);
         p->next_opcode();
     }
     static void Print(Z80* p) {
@@ -367,7 +363,6 @@ struct DEC {
 
         p->set_zero_f(res.u == 0);
         p->set_sub_f(1);
-        p->set_carry_f(res.u > 0);
         p->next_opcode();
     }
 

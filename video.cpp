@@ -68,10 +68,8 @@ void Video::Render() {
     for (int y = 0; y < 160; ++y) {
         for (int x = 0; x < 144; ++x) {
             Data8 tile = tilemap()[(x / 8) + (y / 8) * 32];
-            // std::cout << (x / 8) << "," << (y / 8) << " ";
             int color = GetTilePix(tile, y % 8, x % 8);
 
-            if (color == 0 && !_ctrl.sprite_display_enable()) continue;
             sf::RectangleShape r;
             r.setSize(sf::Vector2f(4, 4));
             r.setPosition(x * 4, y * 4);
@@ -92,9 +90,12 @@ void Video::Render() {
             for (int x = 0; x < 8; ++x) {
                 int color = GetTilePix(tile, y, x);
 
+                if (color == 0) {
+                    continue;
+                }
                 sf::RectangleShape r;
                 r.setSize(sf::Vector2f(4, 4));
-                r.setPosition(y * 4 + y_pos * 4, x * 4 + x_pos * 4);
+                r.setPosition(x * 4 + x_pos * 4, y * 4 + y_pos * 4);
                 r.setFillColor(colors[color]);
                 _window.draw(r);
             }

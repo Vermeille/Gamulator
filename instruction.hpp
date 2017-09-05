@@ -694,7 +694,7 @@ struct CP {
 
         p->set_zero_f(a == b);
         p->set_sub_f(true);
-        p->set_hcarry_f(false);
+        p->set_hcarry_f((a & 0xf) < (b & 0xf));
         p->set_carry_f(a < b);
         p->next_opcode();
     }

@@ -104,8 +104,8 @@ class Video {
 
     byte y_coord() { return _line; }
 
-    byte vram(uint16_t idx) const { return _vram[idx - 0x8000].u; }
-    void set_vram(uint16_t idx, byte val) { _vram[idx - 0x8000].u = val; }
+    byte vram(uint16_t idx) const { return _vram[idx - 0x8000u].u; }
+    void set_vram(uint16_t idx, byte val) { _vram[idx - 0x8000u].u = val; }
 
     byte scroll_x() const { return _scroll_x; }
     void set_scroll_x(byte val) { _scroll_x = val; }
@@ -117,11 +117,11 @@ class Video {
     void set_ly_compare(byte v) { _ly_comp = v; }
 
     const Data8* tilemap() const {
-        return &_vram[(_ctrl.tile_map_mode() ? 0x9C00 : 0x9800) - 0x8000];
+        return &_vram[(_ctrl.tile_map_mode() ? 0x9C00u : 0x9800u) - 0x8000u];
     }
 
-    int GetTilePix(Data8 tile, int y, int x) {
-        int addr = 0;
+    int8_t GetTilePix(Data8 tile, int32_t y, int32_t x) {
+        uint32_t addr = 0;
         if (_ctrl.tile_data_mode()) {
             addr = tile.u * 16 + y * 2;
         } else {
@@ -129,8 +129,8 @@ class Video {
         }
         cdebug << addr << "\n";
 
-        auto l = (_vram[addr].u >> (7 - x)) & 1;
-        auto h = (_vram[addr + 1].u >> (7 - x)) & 1;
+        int8_t l = (_vram[addr].u >> (7 - x)) & 1;
+        int8_t h = (_vram[addr + 1].u >> (7 - x)) & 1;
         return (h << 1) | l;
     }
 
@@ -138,8 +138,8 @@ class Video {
 
     void Render();
 
-    byte oam(int idx) const { return _oam[idx - 0xFE00].u; }
-    void set_oam(int idx, byte v) { _oam[idx - 0xFE00].u = v; }
+    byte oam(uint16_t idx) const { return _oam[idx - 0xFE00u].u; }
+    void set_oam(uint16_t idx, byte v) { _oam[idx - 0xFE00u].u = v; }
 
     bool vblank_int() const { return _vblank_int; }
     bool stat_int() const {
@@ -148,9 +148,9 @@ class Video {
     }
 
    private:
-    int _clock = 0;
-    int _line = 0;
-    int _ly_comp;
+    int32_t _clock = 0;
+    int32_t _line = 0;
+    int32_t _ly_comp;
     LCDCtrl _ctrl;
     LCDStatus _state;
     std::array<Data8, 0xA000 - 0x8000> _vram;

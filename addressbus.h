@@ -21,8 +21,8 @@ class AddressBus {
    private:
     struct Addr {
         std::string _name;
-        int _begin;
-        int _end;
+        uint16_t _begin;
+        uint16_t _end;
         std::function<byte(uint16_t)> _get;
         std::function<void(uint16_t, byte)> _set;
     };

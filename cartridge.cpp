@@ -27,14 +27,14 @@ class Raw : public Cartridge::Controller {
              0x0000,
              0x3FFF,
              [&](uint16_t idx) { return ReadRom(idx); },
-             [&](uint16_t idx, byte) {
+             [&](uint16_t, byte) {
                  cerror << "Can't switch ROM bank without MBC\n";
              }},
             {"rom_bank_switchable",
              0x4000,
              0x7FFF,
              [&](uint16_t idx) { return ReadRom(idx); },
-             [&](uint16_t idx, byte) {
+             [&](uint16_t, byte) {
                  cerror << "Can't switch ROM bank without MBC\n";
              }},
             {"ram_bank",
@@ -57,7 +57,7 @@ class MBC1 : public Cartridge::Controller {
                      0x0000,
                      0x1FFF,
                      [&](uint16_t idx) { return ReadRom(idx); },
-                     [&](uint16_t idx, byte b) {
+                     [&](uint16_t, byte) {
                          cerror << "RAM/Timer enable not implmented\n";
                      }},
                     {"rom_bank_0",
@@ -120,7 +120,7 @@ class MBC3 : public Cartridge::Controller {
              0x0000,
              0x1FFF,
              [&](uint16_t idx) { return ReadRom(idx); },
-             [&](uint16_t idx, byte b) {
+             [&](uint16_t, byte) {
                  std::cout << "RAM/Timer enable not implmented\n";
              }},
             {"rom_bank_0",
@@ -141,7 +141,7 @@ class MBC3 : public Cartridge::Controller {
              [&](uint16_t idx) {
                  return ReadRom(idx - 0x4000 + _rom_nbr * 0x4000);
              },
-             [&](uint16_t, byte b) { std::cout << "RTC not implemented\n"; }},
+             [&](uint16_t, byte) { std::cout << "RTC not implemented\n"; }},
             {
                 "cartridge_ram",
                 0xA000,

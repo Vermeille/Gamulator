@@ -62,13 +62,13 @@ AddressBus::AddressBus(Cartridge& card, Video& v, LinkCable& lk, Keypad& kp)
         {"internal_ram_bank0",
          0xC000,
          0xCFFF,
-         [&](uint16_t index) { return _wram0[index - 0xC000].u; },
-         [&](uint16_t index, byte v) { _wram0[index - 0xC000].u = v; }},
+         [&](uint16_t index) { return _wram0[index - 0xC000u].u; },
+         [&](uint16_t index, byte v) { _wram0[index - 0xC000u].u = v; }},
         {"internal_ram_bank1",
          0xD000,
          0xDFFF,
-         [&](uint16_t index) { return _wram0[index - 0xC000].u; },
-         [&](uint16_t index, byte v) { _wram0[index - 0xC000].u = v; }},
+         [&](uint16_t index) { return _wram0[index - 0xC000u].u; },
+         [&](uint16_t index, byte v) { _wram0[index - 0xC000u].u = v; }},
         {"echo_ram", 0xE000, 0xFDFF, NotImplementedGet, NotImplementedSet},
         {"oam",
          0xFE00,
@@ -119,11 +119,7 @@ AddressBus::AddressBus(Cartridge& card, Video& v, LinkCable& lk, Keypad& kp)
          0xFF43,
          std::bind(&Video::scroll_x, &_vid),
          std::bind(&Video::set_scroll_x, &_vid, _2)},
-        {"y_coord",
-         0xFF44,
-         0xFF44,
-         std::bind(&Video::y_coord, &_vid),
-         NotImplementedSet},
+        {"y_coord", 0xFF44, 0xFF44, std::bind(&Video::y_coord, &_vid), nullptr},
         {"ly_compare",
          0xFF45,
          0xFF45,
@@ -143,8 +139,8 @@ AddressBus::AddressBus(Cartridge& card, Video& v, LinkCable& lk, Keypad& kp)
         {"hram",
          0xFF80,
          0xFFFE,
-         [&](uint16_t index) { return _hram[index - 0xFF80].u; },
-         [&](uint16_t index, byte v) { _hram[index - 0xFF80].u = v; }},
+         [&](uint16_t index) { return _hram[index - 0xFF80u].u; },
+         [&](uint16_t index, byte v) { _hram[index - 0xFF80u].u = v; }},
         {"interrupt_master_enable",
          0xFFFF,
          0xFFFF,
@@ -153,15 +149,15 @@ AddressBus::AddressBus(Cartridge& card, Video& v, LinkCable& lk, Keypad& kp)
 }
 
 const AddressBus::Addr& AddressBus::FindAddr(uint16_t addr) const {
-    int b = 0;
-    int e = _mem_map.size();
+    uint32_t b = 0;
+    uint32_t e = _mem_map.size();
 
     while (true) {
         if (b == e) {
             assert(false);
         }
 
-        int m = (b + e) / 2;
+        uint32_t m = (b + e) / 2;
 
         if (_mem_map[m]._begin <= addr && addr <= _mem_map[m]._end) {
             return _mem_map[m];

@@ -105,7 +105,7 @@ struct ToAddrFF00 {
     }
 };
 
-template <int X>
+template <uint16_t X>
 struct I {
     static inline Data8 Get() { return uint8_t(X); }
     static inline Data8 Get(Z80*) { return uint8_t(X); }
@@ -439,7 +439,7 @@ template <class A, class B>
 struct ADDO {
     static void Do(Z80* p) {
         Data16 res = A::GetW(p);
-        res.u = res.u + B::Get(p).s;
+        res.s = res.s + B::Get(p).s;
 
         p->set_zero_f(res.u == 0);
         p->set_sub_f(false);
@@ -935,8 +935,8 @@ struct LDHL {
     static inline void Do(Z80* p) {
         Data16 a = A::GetW(p);
         Data8 offset = B::Get(p);
-        int res = a.u + offset.s;
-        a.u = res;
+        int res = a.s + offset.s;
+        a.s = res;
         Z80::Register<Z80::HL>::SetW(p, a);
         p->set_zero_f(false);
         p->set_sub_f(false);
@@ -1062,7 +1062,7 @@ struct HALT {
     static void Print(Z80*) { cinstr << "halt" << std::endl; }
 };
 
-template <int Addr, class, class>
+template <uint16_t Addr, class, class>
 struct RST_Impl {
     static void Do(Z80* p) {
         p->set_interrupts(0x00);

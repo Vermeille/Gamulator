@@ -79,7 +79,7 @@ void Video::Render() {
         // std::cout << "\n";
     }
 
-    for (int i = 0; i < 40; ++i) {
+    for (uint32_t i = 0; i < 40; ++i) {
         auto addr = i * 4;
         byte x_pos = _oam[addr].u;
         byte y_pos = _oam[addr + 1].u;

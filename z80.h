@@ -33,23 +33,17 @@ class Z80 {
     void RunOpcode(byte opcode);
     void RunCBOpcode(byte opcode);
 
-    bool zero_f() const { return GetBit(_regs[6].u, 6); }
-    void set_zero_f(bool v) {
-        _regs[6].u = (_regs[6].u & ~(1 << 6)) | (v << 6);
-    }
+    bool zero_f() const { return GetBit(_regs[6].u, 7); }
+    void set_zero_f(bool v) { _regs[6].u = WriteBit(_regs[6].u, 7, v); }
 
-    bool hcarry_f() const { return (_regs[6].u >> 4) & 1; }
-    void set_hcarry_f(bool v) {
-        _regs[6].u = (_regs[6].u & ~(1 << 4)) | (v << 4);
-    }
+    bool sub_f() const { return GetBit(_regs[6].u, 6); }
+    void set_sub_f(bool v) { _regs[6].u = WriteBit(_regs[6].u, 6, v); }
 
-    bool sub_f() const { return (_regs[6].u >> 1) & 1; }
-    void set_sub_f(bool v) { _regs[6].u = (_regs[6].u & ~(1 << 1)) | (v << 1); }
+    bool hcarry_f() const { return GetBit(_regs[6].u, 5); }
+    void set_hcarry_f(bool v) { _regs[6].u = WriteBit(_regs[6].u, 5, v); }
 
-    bool carry_f() const { return (_regs[6].u >> 0) & 1; }
-    void set_carry_f(bool v) {
-        _regs[6].u = (_regs[6].u & ~(1 << 0)) | (v << 0);
-    }
+    bool carry_f() const { return GetBit(_regs[6].u, 4); }
+    void set_carry_f(bool v) { _regs[6].u = WriteBit(_regs[6].u, 4, v); }
 
     void next_opcode() { ++_pc.u; }
 

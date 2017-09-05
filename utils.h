@@ -64,8 +64,10 @@ T ClearBit(T x, int idx) {
     return x;
 }
 
-inline int8_t ToSigned(uint8_t x) { return reinterpret_cast<int8_t&>(x); }
-inline int16_t ToSigned(uint16_t x) { return reinterpret_cast<int16_t&>(x); }
+template <class T>
+T WriteBit(T x, int idx, bool val) {
+    return ClearBit(x, idx) | (val << idx);
+}
 
 struct Logger : public std::basic_ostream<char> {
     Logger() : enabled(false) {}

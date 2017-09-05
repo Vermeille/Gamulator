@@ -476,12 +476,13 @@ struct ADDO {
         Data16 a = A::GetW(p);
         Data8 b = B::Get(p);
         Data16 res;
-        res.s = a.s + b.s;
+        int r = a.s + b.s;
+        res.u = r;
 
         p->set_zero_f(false);
         p->set_sub_f(false);
-        p->set_hcarry_f(((res.u & 0xf) + (b.u & 0xf)) >> 4);
-        p->set_carry_f(res.u >> 16);
+        p->set_hcarry_f(((a.u & 0xf) + (b.u & 0xf)) >> 4);
+        p->set_carry_f(((a.u & 0xff) + (b.u & 0xff)) >> 8);
 
         A::SetW(p, res);
         p->next_opcode();

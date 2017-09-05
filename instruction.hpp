@@ -116,21 +116,29 @@ struct I {
 template <class, class>
 struct DAA {
     static void Do(Z80* p) {
-        auto a = Z80::Register<Z80::A>::Get(p);
-        if ((a.u & 0x0F) > 9 || p->hcarry_f()) {
-            a.u += 6;
-            if ((a.u & 0xF0) > 0x90 || p->carry_f()) {
-                a.u += 0x60;
+        int16_t a = Z80::Register<Z80::A>::Get(p).u;
+        if (!p->sub_f()) {
+            if ((a & 0x0F) > 9 || p->hcarry_f()) {
+                a += 6;
+            }
+            if (a > 0x9F || p->carry_f()) {
+                a += 0x60;
                 p->set_carry_f(true);
-            } else {
-                p->set_carry_f(false);
             }
         } else {
-            p->set_carry_f(false);
+            if (p->hcarry_f()) {
+                a = (a - 6) & 0xFF;
+            }
+            if (p->carry_f()) {
+                a -= 0x60;
+            }
         }
         p->set_hcarry_f(false);
-        p->set_zero_f(a.u == 0);
-        Z80::Register<Z80::A>::Set(p, a);
+        p->set_zero_f((a & 0xff) == 0);
+        if (a >> 8) {
+            p->set_carry_f(true);
+        }
+        Z80::Register<Z80::A>::Set(p, int8_t(a & 0xFF));
         p->next_opcode();
     }
 

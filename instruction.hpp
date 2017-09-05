@@ -315,7 +315,6 @@ struct CPL {
         uint8_t r = 0xFF ^ A::Get(p).u;
         A::Set(p, r);
 
-        p->set_zero_f(r == 0);
         p->set_sub_f(1);
         p->set_hcarry_f(1);
         p->next_opcode();
@@ -346,7 +345,7 @@ template <class A, class>
 struct CCF {
     static inline void Do(Z80* p) {
         p->set_sub_f(false);
-        p->set_hcarry_f(!p->hcarry_f());
+        p->set_hcarry_f(false);
         p->set_carry_f(!p->carry_f());
         p->next_opcode();
     }
@@ -450,11 +449,12 @@ struct ADD {
 template <class A, class B>
 struct ADDw {
     static void Do(Z80* p) {
-        uint32_t res = A::GetW(p).u + B::GetW(p).u;
+        Data16 a = A::GetW(p);
+        Data16 b = B::GetW(p);
+        uint32_t res = a.u + b.u;
 
-        p->set_zero_f((res & 0xFFFF) == 0);
         p->set_sub_f(false);
-        p->set_hcarry_f(false);  // FIXME
+        p->set_hcarry_f(((a.u & 0xFFF) + (b.u & 0xFFF)) >> 12);
         p->set_carry_f(res >> 16);
 
         A::SetW(p, uint16_t(res & 0xFFFF));
@@ -473,12 +473,14 @@ struct ADDw {
 template <class A, class B>
 struct ADDO {
     static void Do(Z80* p) {
-        Data16 res = A::GetW(p);
-        res.s = res.s + B::Get(p).s;
+        Data16 a = A::GetW(p);
+        Data8 b = B::Get(p);
+        Data16 res;
+        res.s = a.s + b.s;
 
-        p->set_zero_f(res.u == 0);
+        p->set_zero_f(false);
         p->set_sub_f(false);
-        p->set_hcarry_f(false);  // FIXME
+        p->set_hcarry_f(((res.u & 0xf) + (b.u & 0xf)) >> 4);
         p->set_carry_f(res.u >> 16);
 
         A::SetW(p, res);

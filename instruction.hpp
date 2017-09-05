@@ -996,7 +996,7 @@ template <class A, class B>
 struct LDD<ToAddr<A>, B> {
     static inline void Do(Z80* proc) {
         Data16 addr = A::GetW(proc);
-        ToAddr<A>::Set(proc, proc->_addr.Get(addr.u));
+        ToAddr<A>::Set(proc, B::Get(proc));
         --addr.u;
         A::SetW(proc, addr);
         proc->next_opcode();

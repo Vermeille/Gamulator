@@ -379,11 +379,17 @@ void Z80::RunOpcode(byte op) { _instr[op](this); }
 void Z80::RunCBOpcode(byte op) { _cb_instr[op](this); }
 
 void Z80::Process() {
+    int cycles = 0;
     while (true) {
-        cinstr << "0x" << std::hex << _pc.u << "\t" << int(_addr.Get(_pc.u).u)
-               << "\t";
-        PrintInstr(_addr.Get(_pc.u).u, this);
-        RunOpcode(_addr.Get(_pc.u).u);
+        if (cycles == 8) {
+            cinstr << "0x" << std::hex << _pc.u << "\t"
+                   << int(_addr.Get(_pc.u).u) << "\t";
+            PrintInstr(_addr.Get(_pc.u).u, this);
+            RunOpcode(_addr.Get(_pc.u).u);
+            cycles = 0;
+        } else {
+            ++cycles;
+        }
 
         _vid.Clock();
         _lk.Clock();
@@ -398,7 +404,6 @@ void Z80::Process() {
         if (_lk.transferred()) {
             _addr.Set(0xFF0F, SetBit(_addr.Get(0xFF0F).u, 3));
         }
-
         ProcessInterrupts();
     }
 }

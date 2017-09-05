@@ -216,15 +216,16 @@ struct RL {
     }
 };
 
-template <class Val, class sdfs>
+template <class Val, class>
 struct RR {
     static void Do(Z80* p) {
         Data8 res = Val::Get(p);
-        int c = p->carry_f();
+        int c = p->carry_f() ? 1 : 0;
 
-        p->set_carry_f(res.u & 1);
+        p->set_carry_f(GetBit(res.u, 0));
 
-        res.u = (c << 7) | (res.u >> 1);
+        res.u = res.u >> 1;
+        res.u = WriteBit(res.u, 7, c);
 
         p->set_zero_f(res.u == 0);
         p->set_sub_f(false);
@@ -236,6 +237,30 @@ struct RR {
     static void Print(Z80* p) {
         cinstr << "rr ";
         Val::Print(p);
+        cinstr << std::endl;
+    }
+};
+
+template <class, class>
+struct RRA {
+    static void Do(Z80* p) {
+        Data8 res = Z80::Register<Z80::A>::Get(p);
+        int c = p->carry_f();
+
+        p->set_carry_f(GetBit(res.u, 0));
+
+        res.u = res.u >> 1;
+        res.u = WriteBit(res.u, 7, c);
+        p->set_zero_f(false);
+        p->set_sub_f(false);
+        p->set_hcarry_f(false);
+
+        Z80::Register<Z80::A>::Set(p, res);
+        p->next_opcode();
+    }
+    static void Print(Z80* p) {
+        cinstr << "rra ";
+        Z80::Register<Z80::A>::Print(p);
         cinstr << std::endl;
     }
 };

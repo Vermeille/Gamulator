@@ -3,14 +3,6 @@
 #include "utils.h"
 
 template <>
-struct Z80::Register<Z80::A> {
-    static inline Data8 Get(const Z80* proc) { return proc->_regs[7]; }
-
-    static inline void Set(Z80* proc, Data8 val) { proc->_regs[7] = val; }
-    static void Print(Z80* p) { cinstr << "A(" << p->_regs[7] << ")"; }
-};
-
-template <>
 struct Z80::Register<Z80::B> {
     static inline Data8 Get(const Z80* proc) { return proc->_regs[0]; }
 
@@ -43,16 +35,6 @@ struct Z80::Register<Z80::E> {
 };
 
 template <>
-struct Z80::Register<Z80::F> {
-    static inline Data8 Get(const Z80* proc) { return proc->_regs[6]; }
-
-    static inline void Set(Z80* proc, Data8 val) {
-        proc->_regs[6] = uint8_t(val.u & 0xF0);
-    }
-    static void Print(Z80* p) { cinstr << "F(" << p->_regs[6] << ")"; }
-};
-
-template <>
 struct Z80::Register<Z80::H> {
     static inline Data8 Get(const Z80* proc) { return proc->_regs[4]; }
 
@@ -66,6 +48,22 @@ struct Z80::Register<Z80::L> {
 
     static inline void Set(Z80* proc, Data8 val) { proc->_regs[5] = val; }
     static void Print(Z80* p) { cinstr << "L(" << p->_regs[5] << ")"; }
+};
+
+template <>
+struct Z80::Register<Z80::A> {
+    static inline Data8 Get(const Z80* proc) { return proc->_regs[7]; }
+
+    static inline void Set(Z80* proc, Data8 val) { proc->_regs[7] = val; }
+    static void Print(Z80* p) { cinstr << "A(" << p->_regs[7] << ")"; }
+};
+
+template <>
+struct Z80::Register<Z80::F> {
+    static inline Data8 Get(const Z80* proc) { return proc->_regs[6]; }
+
+    static inline void Set(Z80* proc, Data8 val) { proc->_regs[6].u = val.u; }
+    static void Print(Z80* p) { cinstr << "F(" << p->_regs[6] << ")"; }
 };
 
 template <>

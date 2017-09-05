@@ -92,7 +92,7 @@ Z80::Z80(AddressBus& addr, Video& v, LinkCable& lk)
     RegisterOpcode<0x1C, Instr<INC, Register<E>, void>>();
     RegisterOpcode<0x1D, Instr<DEC, Register<E>, void>>();
     RegisterOpcode<0x1E, Instr<LD, Register<E>, NextByte>>();
-    RegisterOpcode<0x1F, Instr<RR, Register<A>, void>>();
+    RegisterOpcode<0x1F, Instr<RRA, void, void>>();
     RegisterOpcode<0x20, Instr<JRNZ, NextByte, void>>();
     RegisterOpcode<0x21, Instr<LDw, Register<HL>, NextWord>>();
     RegisterOpcode<0x22, Instr<LDI, ToAddr<Register<HL>>, Register<A>>>();
@@ -109,7 +109,7 @@ Z80::Z80(AddressBus& addr, Video& v, LinkCable& lk)
     RegisterOpcode<0x2D, Instr<DEC, Register<L>, void>>();
     RegisterOpcode<0x2E, Instr<LD, Register<L>, NextByte>>();
     RegisterOpcode<0x2F, Instr<CPL, Register<A>, void>>();
-    RegisterOpcode<0x30, Instr<JRC, NextByte, void>>();
+    RegisterOpcode<0x30, Instr<JRNC, NextByte, void>>();
     RegisterOpcode<0x31, Instr<LDw, Register<SP>, NextWord>>();
     RegisterOpcode<0x32, Instr<LDD, ToAddr<Register<HL>>, Register<A>>>();
     RegisterOpcode<0x33, Instr<INCw, Register<SP>, void>>();

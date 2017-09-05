@@ -77,7 +77,7 @@ struct Z80::Register<Z80::AF> {
 
     static inline void SetW(Z80* proc, Data16 val) {
         Z80::Register<A>::Set(proc, val.bytes.h);
-        Z80::Register<F>::Set(proc, val.bytes.l);
+        Z80::Register<F>::Set(proc, uint8_t(val.bytes.l.u & 0xF0));
     }
     static void Print(Z80* p) { cinstr << "AF(" << GetW(p) << ")"; }
 };

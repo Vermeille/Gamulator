@@ -36,7 +36,6 @@ void Video::Clock() {
             _state.set_mode(LCDStatus::VBLANK);
             _vblank_int = 1;
             cevent << "vBLANK INT\n";
-            Render();
         } else {
             _state.set_mode(LCDStatus::SEARCH_OAM);
         }
@@ -45,6 +44,7 @@ void Video::Clock() {
         _clock = 0;
     }
     if (mode == LCDStatus::VBLANK && _line == 154) {
+        Render();
         _line = 0;
         _clock = 0;
         _state.set_mode(LCDStatus::SEARCH_OAM);
@@ -76,7 +76,6 @@ void Video::Render() {
             r.setFillColor(colors[color]);
             _window.draw(r);
         }
-        // std::cout << "\n";
     }
 
     for (uint32_t i = 0; i < 40; ++i) {
@@ -93,6 +92,7 @@ void Video::Render() {
                 if (color == 0) {
                     continue;
                 }
+
                 sf::RectangleShape r;
                 r.setSize(sf::Vector2f(4, 4));
                 r.setPosition(x * 4 + x_pos * 4, y * 4 + y_pos * 4);

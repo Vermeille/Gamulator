@@ -90,10 +90,10 @@ class LCDStatus {
 
 class Video {
    public:
-    Video() : _window(sf::VideoMode(160 * 4, 144 * 4), "Gameboy") {
+    Video() : _window(sf::VideoMode(144 * 4, 160 * 4), "Gameboy") {
         _vram.fill(uint8_t(0));
         _oam.fill(uint8_t(0));
-        _window.setFramerateLimit(60);
+        _window.setFramerateLimit(0);
     }
 
     void set_lcdc(byte b) { _ctrl.Set(b); }

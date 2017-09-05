@@ -312,8 +312,10 @@ struct BIT {
 template <class A, class>
 struct CPL {
     static inline void Do(Z80* p) {
-        A::Set(p, uint8_t(~A::Get(p).u));
+        uint8_t r = 0xFF ^ A::Get(p).u;
+        A::Set(p, r);
 
+        p->set_zero_f(r == 0);
         p->set_sub_f(1);
         p->set_hcarry_f(1);
         p->next_opcode();
@@ -645,7 +647,8 @@ struct SRL {
         p->set_hcarry_f(false);
         p->set_carry_f(a.u & 1);
 
-        a.u = (a.u >> 1) & ~(1 << 7);
+        a.u = (a.u >> 1);
+        a.u = ClearBit(a.u, 7);
         p->set_zero_f(a.u == 0);
 
         A::Set(p, a);
@@ -711,7 +714,7 @@ struct SWAP {
 
         p->set_zero_f(res.u == 0);
         p->set_sub_f(false);
-        p->set_hcarry_f(false);
+        p->set_hcarry_f(true);
         p->set_carry_f(false);
         p->next_opcode();
     }

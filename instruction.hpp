@@ -973,25 +973,25 @@ struct LDw {
     }
 };
 
-template <class A, class B>
-struct LDHL {
+template <class, class>
+struct LDHLSPN {
     static inline void Do(Z80* p) {
-        Data16 a = A::GetW(p);
-        Data8 offset = B::Get(p);
-        int res = a.s + offset.s;
-        a.s = res;
-        Z80::Register<Z80::HL>::SetW(p, a);
+        Data16 a = Z80::Register<Z80::SP>::GetW(p);
+        Data8 offset = NextByte::Get(p);
+        int res = a.u + offset.s;
         p->set_zero_f(false);
         p->set_sub_f(false);
-        p->set_hcarry_f(false);
-        p->set_carry_f(res > 0xFFFF);
+        p->set_hcarry_f((a.u ^ offset.s ^ res) & 0x10);
+        p->set_carry_f((a.u ^ offset.s ^ res) & 0x100);
+        a.u = res;
+        Z80::Register<Z80::HL>::SetW(p, a);
         p->next_opcode();
     }
     static void Print(Z80* p) {
         cinstr << "ldhl ";
-        A::Print(p);
+        Z80::Register<Z80::SP>::Print(p);
         cinstr << ", ";
-        B::Print(p);
+        NextByte::Print(p);
         cinstr << std::endl;
     }
 };

@@ -309,7 +309,7 @@ Z80::Z80(AddressBus& addr, Video& v, LinkCable& lk)
     RegisterOpcode<0xF5, Instr<PUSH, Register<AF>, void>>();
     RegisterOpcode<0xF6, Instr<OR, Register<A>, NextByte>>();
     RegisterOpcode<0xF7, Instr<RST30, void, void>>();
-    RegisterOpcode<0xF8, Instr<LDHL, Register<SP>, NextByte>>();
+    RegisterOpcode<0xF8, Instr<LDHLSPN, void, void>>();
     RegisterOpcode<0xF9, Instr<LDw, Register<SP>, Register<HL>>>();
     RegisterOpcode<0xFA, Instr<LD, Register<A>, ToAddr<NextWord>>>();
     RegisterOpcode<0xFB, Instr<EI, void, void>>();

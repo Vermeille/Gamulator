@@ -530,12 +530,13 @@ struct SUB {
         Data8 a = A::Get(p);
         Data8 b = B::Get(p);
         Data8 res;
-        res.s = a.s - b.s;
+        int r = a.u - b.u;
+        res.s = r;
 
         p->set_zero_f(res.u == 0);
-        p->set_hcarry_f(false);
+        p->set_hcarry_f((a.s ^ b.s ^ res.s) & 0x10);
         p->set_sub_f(true);
-        p->set_carry_f(a.s < b.s);
+        p->set_carry_f(r & 0x100);
 
         A::Set(p, res);
         p->next_opcode();
@@ -556,12 +557,13 @@ struct SBC {
         Data8 a = A::Get(p);
         Data8 b = B::Get(p);
         Data8 res;
-        res.s = a.s - b.s - p->carry_f();
+        int r = a.u - b.u - p->carry_f();
+        res.u = r;
 
         p->set_zero_f(res.u == 0);
-        p->set_hcarry_f(false);
+        p->set_hcarry_f((a.u ^ b.u ^ r) & 0x10);
         p->set_sub_f(true);
-        p->set_carry_f(a.s < b.s + p->carry_f());
+        p->set_carry_f(r & 0x100);
 
         A::Set(p, res);
         p->next_opcode();

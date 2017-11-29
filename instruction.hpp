@@ -426,11 +426,13 @@ struct DECw {
 template <class A, class B>
 struct ADD {
     static void Do(Z80* p) {
-        uint16_t res = A::Get(p).u + B::Get(p).u;
+        Data8 a = A::Get(p);
+        Data8 b = B::Get(p);
+        uint16_t res = a.u + b.u;
 
         p->set_zero_f((res & 0xFF) == 0);
         p->set_sub_f(false);
-        p->set_hcarry_f(false);  // FIXME
+        p->set_hcarry_f(((a.u & 0xf) + (b.u & 0xf)) >> 4);  // FIXME
         p->set_carry_f(res >> 8);
 
         A::Set(p, uint8_t(res & 0xFF));
@@ -500,11 +502,13 @@ struct ADDO {
 template <class A, class B>
 struct ADC {
     static void Do(Z80* p) {
-        uint16_t res = B::Get(p).u + A::Get(p).u + p->carry_f();
+        Data8 a = A::Get(p);
+        Data8 b = B::Get(p);
+        uint16_t res = a.u + b.u + p->carry_f();
 
         p->set_zero_f((res & 0xFF) == 0);
         p->set_sub_f(false);
-        p->set_hcarry_f(false);  // FIXME
+        p->set_hcarry_f(((a.u & 0xf) + (b.u & 0xf) + p->carry_f()) >> 4);
         p->set_carry_f(res >> 8);
 
         A::Set(p, uint8_t(res & 0xFF));

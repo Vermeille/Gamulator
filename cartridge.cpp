@@ -80,7 +80,7 @@ class MBC1 : public Cartridge::Controller {
                              _rom_nbr =
                                  (_rom_nbr & ~(0b11 << 5)) | ((b & 0b11) << 5);
                          } else {
-                             _ram_nbr = b;
+                             _ram_nbr = b & 0b11;
                          }
                      }},
                     {"rom_bank_switchable",
@@ -108,7 +108,7 @@ class MBC1 : public Cartridge::Controller {
     byte _rom_nbr;
     std::array<byte, 4 * 0x2000> _ram;
     byte _ram_nbr;
-    enum RamRomSelector { Rom, Ram } _selector;
+    enum RamRomSelector { Rom = 0, Ram = 1 } _selector;
 };
 
 class MBC3 : public Cartridge::Controller {

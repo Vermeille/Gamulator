@@ -102,7 +102,8 @@ class Video {
     void set_lcd_status(byte v) { _state.Set(v); }
     byte lcd_status() const { return _state.Get(); }
 
-    byte y_coord() { return _line; }
+    byte y_coord() const { return _line; }
+    void reset_y_coord() { _line = 0; }
 
     byte vram(uint16_t idx) const { return _vram[idx - 0x8000u].u; }
     void set_vram(uint16_t idx, byte val) { _vram[idx - 0x8000u].u = val; }

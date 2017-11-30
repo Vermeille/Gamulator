@@ -419,7 +419,8 @@ template <class Val, class>
 struct INC {
     static inline void Do(Z80* p) {
         Data8 res = Val::Get(p);
-        res.u += 1;
+        p->set_hcarry_f((res.u & 0xf) == 0xf);
+        ++res.u;
         Val::Set(p, res);
 
         p->set_zero_f(res.u == 0);
@@ -452,7 +453,8 @@ template <class Val, class>
 struct DEC {
     static inline void Do(Z80* p) {
         Data8 res = Val::Get(p);
-        res.u -= 1;
+        p->set_hcarry_f((res.u & 0xf) == 0);
+        --res.u;
         Val::Set(p, res);
 
         p->set_zero_f(res.u == 0);

@@ -737,12 +737,12 @@ struct SLA {
     static void Do(Z80* p) {
         Data8 a = A::Get(p);
 
-        p->set_sub_f(false);
-        p->set_hcarry_f(false);
         p->set_carry_f(GetBit(a.u, 7));
 
         a.u = a.u << 1;
-        p->set_zero_f(a.u);
+        p->set_zero_f(a.u == 0);
+        p->set_sub_f(false);
+        p->set_hcarry_f(false);
 
         A::Set(p, a);
         p->next_opcode();

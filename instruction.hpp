@@ -168,6 +168,25 @@ struct RLC {
     }
 };
 
+template <class, class>
+struct RLCA {
+    static void Do(Z80* p) {
+        Data8 res = Z80::Register<Z80::A>::Get(p);
+
+        res.u = (res.u << 1) | ((res.u >> 7) & 1);
+
+        p->set_zero_f(false);
+        p->set_sub_f(false);
+        p->set_hcarry_f(false);
+        p->set_carry_f(res.u & 1);
+
+        Z80::Register<Z80::A>::Set(p, res);
+        p->next_opcode();
+    }
+
+    static void Print(Z80* p) { cinstr << "rlca\n"; }
+};
+
 template <class Val, class sdfs>
 struct RRC {
     static void Do(Z80* p) {
@@ -189,6 +208,26 @@ struct RRC {
         Val::Print(p);
         cinstr << std::endl;
     }
+};
+
+template <class, class>
+struct RRCA {
+    static void Do(Z80* p) {
+        Data8 res = Z80::Register<Z80::A>::Get(p);
+
+        int c = res.u & 1;
+        res.u = (res.u >> 1) | (c << 7);
+
+        p->set_zero_f(false);
+        p->set_sub_f(false);
+        p->set_hcarry_f(false);
+        p->set_carry_f(c);
+
+        Z80::Register<Z80::A>::Set(p, res);
+        p->next_opcode();
+    }
+
+    static void Print(Z80*) { cinstr << "rrca\n"; }
 };
 
 template <class Val, class sdfs>
@@ -214,6 +253,27 @@ struct RL {
         Val::Print(p);
         cinstr << std::endl;
     }
+};
+
+template <class, class>
+struct RLA {
+    static void Do(Z80* p) {
+        Data8 res = Z80::Register<Z80::A>::Get(p);
+        int c = p->carry_f();
+
+        p->set_carry_f(res.u >> 7);
+
+        res.u = res.u << 1 | c;
+
+        p->set_zero_f(false);
+        p->set_sub_f(false);
+        p->set_hcarry_f(false);
+
+        Z80::Register<Z80::A>::Set(p, res);
+        p->next_opcode();
+    }
+
+    static void Print(Z80* p) { cinstr << "rla\n"; }
 };
 
 template <class Val, class>

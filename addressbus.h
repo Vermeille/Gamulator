@@ -6,12 +6,14 @@
 #include "cartridge.h"
 #include "keypad.h"
 #include "link.h"
+#include "timer.h"
 #include "utils.h"
 #include "video.h"
 
 class AddressBus {
    public:
-    AddressBus(Cartridge& card, Video& v, LinkCable& lk, Keypad& kp);
+    AddressBus(
+        Cartridge& card, Video& v, LinkCable& lk, Keypad& kp, Timer& timer);
 
     void Set(uint16_t index, Data8 val);
 
@@ -34,6 +36,7 @@ class AddressBus {
     Video& _vid;
     LinkCable& _lk;
     Keypad _kp;
+    Timer& _timer;
     std::array<Data8, 0xFFFF - 0xFF80> _hram;
     std::array<Data8, 0xE000 - 0xC000> _wram0;
 

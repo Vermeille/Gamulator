@@ -10,7 +10,7 @@ typedef uint16_t word;
 
 class Z80 {
    public:
-    Z80(AddressBus& addr, Video& v, LinkCable& lk);
+    Z80(AddressBus& addr, Video& v, LinkCable& lk, Timer& timer);
 
     void Process();
 
@@ -47,6 +47,9 @@ class Z80 {
 
     void next_opcode() { ++_pc.u; }
 
+    bool halted() const { return _halted; }
+    void set_halt(bool x) { _halted = x; }
+
    private:
     template <unsigned char Opcode, class Instr>
     void RegisterOpcode();
@@ -73,9 +76,11 @@ class Z80 {
     AddressBus& _addr;
     LinkCable _lk;
     Video& _vid;
+    Timer& _timer;
     static std::array<std::function<void(Z80*)>, 256> _instr;
     static std::array<std::function<void(Z80*)>, 256> _cb_instr;
     static std::array<std::function<void(Z80*)>, 256> _print;
     static std::array<std::function<void(Z80*)>, 256> _cb_print;
     byte _interrupts;
+    bool _halted;
 };

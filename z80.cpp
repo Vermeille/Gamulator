@@ -13,13 +13,15 @@ std::array<std::function<void(Z80*)>, 256> Z80::_cb_instr;
 std::array<std::function<void(Z80*)>, 256> Z80::_print;
 std::array<std::function<void(Z80*)>, 256> Z80::_cb_print;
 
-Z80::Z80(AddressBus& addr, Video& v, LinkCable& lk)
+Z80::Z80(AddressBus& addr, Video& v, LinkCable& lk, Timer& timer)
     : _sp(uint16_t(0xFFFE)),
       _pc(uint16_t(0x100)),
       _addr(addr),
       _lk(lk),
       _vid(v),
-      _interrupts(uint8_t(0xFF)) {
+      _timer(timer),
+      _interrupts(uint8_t(0xFF)),
+      _halted(false) {
     Register<F>::Set(this, uint8_t(0xB0));
     Register<A>::Set(this, uint8_t(0x01));
     Register<C>::Set(this, uint8_t(0x13));
@@ -381,18 +383,21 @@ void Z80::RunCBOpcode(byte op) { _cb_instr[op](this); }
 void Z80::Process() {
     int cycles = 0;
     while (true) {
-        if (cycles == 8) {
-            cinstr << "0x" << std::hex << _pc.u << "\t"
-                   << int(_addr.Get(_pc.u).u) << "\t";
-            PrintInstr(_addr.Get(_pc.u).u, this);
-            RunOpcode(_addr.Get(_pc.u).u);
-            cycles = 0;
-        } else {
-            ++cycles;
+        if (!halted()) {
+            if (cycles == 8) {
+                cinstr << "0x" << std::hex << _pc.u << "\t"
+                       << int(_addr.Get(_pc.u).u) << "\t";
+                PrintInstr(_addr.Get(_pc.u).u, this);
+                RunOpcode(_addr.Get(_pc.u).u);
+                cycles = 1;
+            } else {
+                ++cycles;
+            }
         }
 
         _vid.Clock();
         _lk.Clock();
+        _timer.Clock();
 
         if (_vid.vblank_int()) {
             _addr.Set(0xFF0F, SetBit(_addr.Get(0xFF0F).u, 0));
@@ -400,6 +405,10 @@ void Z80::Process() {
         }
         if (_vid.stat_int()) {
             _addr.Set(0xFF0F, SetBit(_addr.Get(0xFF0F).u, 1));
+        }
+        if (_timer.tima_int()) {
+            cevent << "TIMA INT\n";
+            _addr.Set(0xFF0F, SetBit(_addr.Get(0xFF0F).u, 2));
         }
         if (_lk.transferred()) {
             _addr.Set(0xFF0F, SetBit(_addr.Get(0xFF0F).u, 3));
@@ -414,6 +423,7 @@ void Z80::PrintCBInstr(uint8_t op, Z80* p) { _cb_print[op](p); }
 void Z80::ProcessInterrupts() {
     byte ints = _addr.Get(0xFFFF).u & _addr.Get(0xFF0F).u & _interrupts;
 
+    set_halt(halted() && !_addr.Get(0xFF0F).u);
     if (ints & 1) {
         cevent << "VBlank int!\n";
         _addr.Set(0xFF0F, ClearBit(_addr.Get(0xFF0F).u, 0));

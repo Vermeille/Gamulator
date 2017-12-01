@@ -25,8 +25,9 @@ void NotImplementedSet(uint16_t idx, byte) {
     cerror << "/!\\ " << std::hex << idx << " is not implemented yet\n";
 }
 
-AddressBus::AddressBus(Cartridge& card, Video& v, LinkCable& lk, Keypad& kp)
-    : _card(card), _vid(v), _lk(lk), _kp(kp) {
+AddressBus::AddressBus(
+    Cartridge& card, Video& v, LinkCable& lk, Keypad& kp, Timer& timer)
+    : _card(card), _vid(v), _lk(lk), _kp(kp), _timer(timer) {
     using namespace std::placeholders;
     _mem_map = {
         {"cartridge_rom_bank_0",
@@ -92,6 +93,27 @@ AddressBus::AddressBus(Cartridge& card, Video& v, LinkCable& lk, Keypad& kp)
          0xFF02,
          std::bind(&LinkCable::serial_control, &_lk),
          std::bind(&LinkCable::set_serial_control, &_lk, _2)},
+        {"unused", 0xFF03, 0xFF03, NotImplementedGet, NotImplementedSet},
+        {"timer_divider",
+         0xFF04,
+         0xFF04,
+         [&](uint16_t) { return _timer.div().u; },
+         [&](uint16_t, byte) { _timer.Reset(); }},
+        {"timer_counter",
+         0xFF05,
+         0xFF05,
+         [&](uint16_t) { return _timer.tima().u; },
+         [&](uint16_t, byte x) { _timer.set_tima(x); }},
+        {"timer_modulo",
+         0xFF06,
+         0xFF06,
+         [&](uint16_t) { return _timer.tma().u; },
+         [&](uint16_t, byte x) { _timer.set_tma(x); }},
+        {"timer_control",
+         0xFF07,
+         0xFF07,
+         [&](uint16_t) { return _timer.tac().u; },
+         [&](uint16_t, byte x) { _timer.set_tac(x); }},
         {"io_ports", 0xFF03, 0xFF0E, NotImplementedGet, NotImplementedSet},
         {"int_flag",
          0xFF0F,

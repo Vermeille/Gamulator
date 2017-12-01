@@ -1160,11 +1160,8 @@ typedef Z80::Instr<Nop, void, void> NOP;
 template <class, class>
 struct HALT {
     static inline void Do(Z80* p) {
-        // stupidly loop on the halt / do nothing
-        p->set_interrupts(0xFF);
-        if (p->_addr.Get(0xFF0F).u != 0) {
-            p->next_opcode();
-        }
+        p->set_halt(true);
+        p->next_opcode();
     }
     static void Print(Z80*) { cinstr << "halt" << std::endl; }
 };

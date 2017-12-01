@@ -50,13 +50,17 @@ int main(int argc, char** argv) {
             serial.enabled = true;
         } else if (argv[i] == std::string("--errors")) {
             cerror.enabled = true;
+        } else if (!gamefile.empty()) {
+            std::cerr << "unrecognized option " << argv[i] << "\n";
+            return 1;
         }
     }
     Cartridge card(gamefile);
     LinkCable lk;
     Keypad kp;
-    AddressBus addrbus(card, v, lk, kp);
-    Z80 processor(addrbus, v, lk);
+    Timer timer;
+    AddressBus addrbus(card, v, lk, kp, timer);
+    Z80 processor(addrbus, v, lk, timer);
     z80_ptr = &processor;
     struct sigaction action;
     action.sa_handler = segv_handler;

@@ -7,6 +7,8 @@
 
 using byte = uint8_t;
 
+constexpr auto kCpuFreq = 4194304u;
+
 union Data8 {
    public:
     uint8_t u;

@@ -754,6 +754,29 @@ struct SLA {
     }
 };
 
+template <class A, class>
+struct SRA {
+    static void Do(Z80* p) {
+        Data8 a = A::Get(p);
+
+        p->set_carry_f(GetBit(a.u, 0));
+
+        a.u = a.u >> 1;
+        a.u = SetBit(a.u, 7, GetBit(a.u, 6));
+        p->set_zero_f(a.u == 0);
+        p->set_sub_f(false);
+        p->set_hcarry_f(false);
+
+        A::Set(p, a);
+        p->next_opcode();
+    }
+    static void Print(Z80* p) {
+        cinstr << "sla ";
+        A::Print(p);
+        cinstr << std::endl;
+    }
+};
+
 template <class A, class B>
 struct CP {
     static void Do(Z80* p) {

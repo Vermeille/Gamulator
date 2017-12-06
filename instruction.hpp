@@ -803,12 +803,12 @@ template <class A, class>
 struct SWAP {
     static void Do(Z80* p) {
         Data8 res = A::Get(p);
-        res.u = ((res.u & 0x0F) << 4) | ((res.u & 0xF0) >> 4);
-        A::Set(p, res);
 
+        res.u = (res.u << 4) | (res.u >> 4);
+        A::Set(p, res);
         p->set_zero_f(res.u == 0);
         p->set_sub_f(false);
-        p->set_hcarry_f(true);
+        p->set_hcarry_f(false);
         p->set_carry_f(false);
         p->next_opcode();
     }

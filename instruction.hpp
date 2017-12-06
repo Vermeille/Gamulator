@@ -343,7 +343,7 @@ struct RES {
 template <class Bit, class A>
 struct SET {
     static void Do(Z80* p) {
-        A::Set(p, A::Get(p).u | (1 << Bit::Get().u));
+        A::Set(p, uint8_t(A::Get(p).u | (1 << Bit::Get().u)));
         p->next_opcode();
     }
     static void Print(Z80* p) {

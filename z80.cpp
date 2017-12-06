@@ -424,6 +424,9 @@ void Z80::ProcessInterrupts() {
     byte ints = _addr.Get(0xFFFF).u & _addr.Get(0xFF0F).u & _interrupts;
 
     set_halt(halted() && !_addr.Get(0xFF0F).u);
+    if (ints) {
+        --_pc.u;
+    }
     if (ints & 1) {
         cevent << "VBlank int!\n";
         _addr.Set(0xFF0F, ClearBit(_addr.Get(0xFF0F).u, 0));

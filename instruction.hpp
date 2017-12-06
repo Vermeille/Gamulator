@@ -1193,7 +1193,6 @@ template <uint16_t Addr, class, class>
 struct RST_Impl {
     static void Do(Z80* p) {
         p->set_interrupts(0x00);
-        --p->_pc.u;
         CALL<I<Addr>, void>::Do(p);
         cinstr << "interrupt caught by " << std::hex << Addr << std::endl;
     }

@@ -184,7 +184,7 @@ struct RLCA {
         p->next_opcode();
     }
 
-    static void Print(Z80* p) { cinstr << "rlca\n"; }
+    static void Print(Z80*) { cinstr << "rlca\n"; }
 };
 
 template <class Val, class sdfs>
@@ -273,7 +273,7 @@ struct RLA {
         p->next_opcode();
     }
 
-    static void Print(Z80* p) { cinstr << "rla\n"; }
+    static void Print(Z80*) { cinstr << "rla\n"; }
 };
 
 template <class Val, class>

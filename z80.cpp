@@ -360,21 +360,101 @@ Z80::Z80(AddressBus& addr, Video& v, LinkCable& lk, Timer& timer)
     RegisterCBOpcode<0x25, Instr<SLA, Register<L>, void>>();
     RegisterCBOpcode<0x26, Instr<SLA, ToAddr<Register<HL>>, void>>();
     RegisterCBOpcode<0x27, Instr<SLA, Register<A>, void>>();
-
+    RegisterCBOpcode<0x28, Instr<SRA, Register<B>, void>>();
+    RegisterCBOpcode<0x29, Instr<SRA, Register<C>, void>>();
+    RegisterCBOpcode<0x2A, Instr<SRA, Register<D>, void>>();
+    RegisterCBOpcode<0x2B, Instr<SRA, Register<E>, void>>();
+    RegisterCBOpcode<0x2C, Instr<SRA, Register<H>, void>>();
+    RegisterCBOpcode<0x2D, Instr<SRA, Register<L>, void>>();
+    RegisterCBOpcode<0x2E, Instr<SRA, ToAddr<Register<HL>>, void>>();
+    RegisterCBOpcode<0x2F, Instr<SRA, Register<A>, void>>();
+    RegisterCBOpcode<0x30, Instr<SWAP, Register<B>, void>>();
+    RegisterCBOpcode<0x31, Instr<SWAP, Register<C>, void>>();
+    RegisterCBOpcode<0x32, Instr<SWAP, Register<D>, void>>();
+    RegisterCBOpcode<0x33, Instr<SWAP, Register<E>, void>>();
+    RegisterCBOpcode<0x34, Instr<SWAP, Register<H>, void>>();
+    RegisterCBOpcode<0x35, Instr<SWAP, Register<L>, void>>();
+    RegisterCBOpcode<0x36, Instr<SWAP, ToAddr<Register<HL>>, void>>();
     RegisterCBOpcode<0x37, Instr<SWAP, Register<A>, void>>();
     RegisterCBOpcode<0x38, Instr<SRL, Register<B>, void>>();
-
-    RegisterCBOpcode<0x3f, Instr<SRL, Register<A>, void>>();
-
+    RegisterCBOpcode<0x39, Instr<SRL, Register<C>, void>>();
+    RegisterCBOpcode<0x3A, Instr<SRL, Register<D>, void>>();
+    RegisterCBOpcode<0x3B, Instr<SRL, Register<E>, void>>();
+    RegisterCBOpcode<0x3C, Instr<SRL, Register<H>, void>>();
+    RegisterCBOpcode<0x3D, Instr<SRL, Register<L>, void>>();
+    RegisterCBOpcode<0x3E, Instr<SRL, ToAddr<Register<HL>>, void>>();
+    RegisterCBOpcode<0x3F, Instr<SRL, Register<A>, void>>();
+    RegisterCBOpcode<0x40, Instr<BIT, I<0>, Register<B>>>();
+    RegisterCBOpcode<0x41, Instr<BIT, I<0>, Register<C>>>();
     RegisterCBOpcode<0x42, Instr<BIT, I<0>, Register<D>>>();
-
+    RegisterCBOpcode<0x43, Instr<BIT, I<0>, Register<E>>>();
+    RegisterCBOpcode<0x44, Instr<BIT, I<0>, Register<H>>>();
+    RegisterCBOpcode<0x45, Instr<BIT, I<0>, Register<L>>>();
+    RegisterCBOpcode<0x46, Instr<BIT, I<0>, ToAddr<Register<HL>>>>();
+    RegisterCBOpcode<0x47, Instr<BIT, I<0>, Register<A>>>();
+    RegisterCBOpcode<0x48, Instr<BIT, I<1>, Register<B>>>();
+    RegisterCBOpcode<0x49, Instr<BIT, I<1>, Register<C>>>();
+    RegisterCBOpcode<0x4A, Instr<BIT, I<1>, Register<D>>>();
+    RegisterCBOpcode<0x4B, Instr<BIT, I<1>, Register<E>>>();
+    RegisterCBOpcode<0x4C, Instr<BIT, I<1>, Register<H>>>();
+    RegisterCBOpcode<0x4D, Instr<BIT, I<1>, Register<L>>>();
+    RegisterCBOpcode<0x4E, Instr<BIT, I<1>, ToAddr<Register<HL>>>>();
     RegisterCBOpcode<0x4F, Instr<BIT, I<1>, Register<A>>>();
-
+    RegisterCBOpcode<0x50, Instr<BIT, I<2>, Register<B>>>();
+    RegisterCBOpcode<0x51, Instr<BIT, I<2>, Register<C>>>();
+    RegisterCBOpcode<0x52, Instr<BIT, I<2>, Register<D>>>();
+    RegisterCBOpcode<0x53, Instr<BIT, I<2>, Register<E>>>();
+    RegisterCBOpcode<0x54, Instr<BIT, I<2>, Register<H>>>();
+    RegisterCBOpcode<0x55, Instr<BIT, I<2>, Register<L>>>();
+    RegisterCBOpcode<0x56, Instr<BIT, I<2>, ToAddr<Register<HL>>>>();
+    RegisterCBOpcode<0x57, Instr<BIT, I<2>, Register<A>>>();
+    RegisterCBOpcode<0x58, Instr<BIT, I<3>, Register<B>>>();
+    RegisterCBOpcode<0x59, Instr<BIT, I<3>, Register<C>>>();
+    RegisterCBOpcode<0x5A, Instr<BIT, I<3>, Register<D>>>();
+    RegisterCBOpcode<0x5B, Instr<BIT, I<3>, Register<E>>>();
+    RegisterCBOpcode<0x5C, Instr<BIT, I<3>, Register<H>>>();
+    RegisterCBOpcode<0x5D, Instr<BIT, I<3>, Register<L>>>();
+    RegisterCBOpcode<0x5E, Instr<BIT, I<3>, ToAddr<Register<HL>>>>();
+    RegisterCBOpcode<0x5F, Instr<BIT, I<3>, Register<A>>>();
+    RegisterCBOpcode<0x60, Instr<BIT, I<4>, Register<B>>>();
+    RegisterCBOpcode<0x61, Instr<BIT, I<4>, Register<C>>>();
+    RegisterCBOpcode<0x62, Instr<BIT, I<4>, Register<D>>>();
+    RegisterCBOpcode<0x63, Instr<BIT, I<4>, Register<E>>>();
+    RegisterCBOpcode<0x64, Instr<BIT, I<4>, Register<H>>>();
+    RegisterCBOpcode<0x65, Instr<BIT, I<4>, Register<L>>>();
+    RegisterCBOpcode<0x66, Instr<BIT, I<4>, ToAddr<Register<HL>>>>();
+    RegisterCBOpcode<0x67, Instr<BIT, I<4>, Register<A>>>();
+    RegisterCBOpcode<0x68, Instr<BIT, I<5>, Register<B>>>();
+    RegisterCBOpcode<0x69, Instr<BIT, I<5>, Register<C>>>();
+    RegisterCBOpcode<0x6A, Instr<BIT, I<5>, Register<D>>>();
+    RegisterCBOpcode<0x6B, Instr<BIT, I<5>, Register<E>>>();
+    RegisterCBOpcode<0x6C, Instr<BIT, I<5>, Register<H>>>();
+    RegisterCBOpcode<0x6D, Instr<BIT, I<5>, Register<L>>>();
+    RegisterCBOpcode<0x6E, Instr<BIT, I<5>, ToAddr<Register<HL>>>>();
+    RegisterCBOpcode<0x6F, Instr<BIT, I<5>, Register<A>>>();
+    RegisterCBOpcode<0x70, Instr<BIT, I<6>, Register<B>>>();
+    RegisterCBOpcode<0x71, Instr<BIT, I<6>, Register<C>>>();
+    RegisterCBOpcode<0x72, Instr<BIT, I<6>, Register<D>>>();
+    RegisterCBOpcode<0x73, Instr<BIT, I<6>, Register<E>>>();
+    RegisterCBOpcode<0x74, Instr<BIT, I<6>, Register<H>>>();
+    RegisterCBOpcode<0x75, Instr<BIT, I<6>, Register<L>>>();
+    RegisterCBOpcode<0x76, Instr<BIT, I<6>, ToAddr<Register<HL>>>>();
+    RegisterCBOpcode<0x77, Instr<BIT, I<6>, Register<A>>>();
+    RegisterCBOpcode<0x78, Instr<BIT, I<7>, Register<B>>>();
+    RegisterCBOpcode<0x79, Instr<BIT, I<7>, Register<C>>>();
+    RegisterCBOpcode<0x7A, Instr<BIT, I<7>, Register<D>>>();
+    RegisterCBOpcode<0x7B, Instr<BIT, I<7>, Register<E>>>();
+    RegisterCBOpcode<0x7C, Instr<BIT, I<7>, Register<H>>>();
+    RegisterCBOpcode<0x7D, Instr<BIT, I<7>, Register<L>>>();
+    RegisterCBOpcode<0x7E, Instr<BIT, I<7>, ToAddr<Register<HL>>>>();
     RegisterCBOpcode<0x7F, Instr<BIT, I<7>, Register<A>>>();
 
     RegisterCBOpcode<0x87, Instr<RES, I<0>, Register<A>>>();
 
     RegisterCBOpcode<0x9E, Instr<RES, I<3>, ToAddr<Register<HL>>>>();
+
+    RegisterCBOpcode<0xCF, Instr<SET, I<1>, Register<A>>>();
+    RegisterCBOpcode<0xEC, Instr<SET, I<5>, Register<H>>>();
 }
 
 void Z80::RunOpcode(byte op) { _instr[op](this); }

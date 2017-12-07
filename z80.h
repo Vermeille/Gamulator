@@ -14,12 +14,17 @@ class Z80 {
 
     void Process();
 
-    template <template <class, class> class Action, class Op1, class Op2>
-    class Instr {
+    class InstrBase {
        public:
-        static void Do(Z80* p) { Action<Op1, Op2>::Do(p); }
+        virtual int Do(Z80*) = 0;
+        virtual void Print(Z80*) = 0;
+    };
 
-        static void Print(Z80* p) { Action<Op1, Op2>::Print(p); }
+    template <template <class, class> class Action, class Op1, class Op2>
+    class Instr : public InstrBase {
+       public:
+        int Do(Z80* p) override { return Action<Op1, Op2>::Do(p); }
+        void Print(Z80* p) override { Action<Op1, Op2>::Print(p); }
     };
 
     enum RegName { A, B, C, D, E, F, H, L, AF, BC, DE, HL, SP, PC };
@@ -30,8 +35,8 @@ class Z80 {
     static void PrintInstr(uint8_t pc, Z80* p);
     static void PrintCBInstr(uint8_t pc, Z80* p);
     void Dump() const;
-    void RunOpcode(byte opcode);
-    void RunCBOpcode(byte opcode);
+    int RunOpcode(byte opcode);
+    int RunCBOpcode(byte opcode);
 
     bool zero_f() const { return GetBit(_regs[6].u, 7); }
     void set_zero_f(bool v) { _regs[6].u = WriteBit(_regs[6].u, 7, v); }
@@ -77,10 +82,8 @@ class Z80 {
     LinkCable _lk;
     Video& _vid;
     Timer& _timer;
-    static std::array<std::function<void(Z80*)>, 256> _instr;
-    static std::array<std::function<void(Z80*)>, 256> _cb_instr;
-    static std::array<std::function<void(Z80*)>, 256> _print;
-    static std::array<std::function<void(Z80*)>, 256> _cb_print;
+    static std::array<std::unique_ptr<InstrBase>, 256> _instr;
+    static std::array<std::unique_ptr<InstrBase>, 256> _cb_instr;
     byte _interrupts;
     bool _halted;
 };

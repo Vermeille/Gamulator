@@ -50,6 +50,9 @@ int main(int argc, char** argv) {
             serial.enabled = true;
         } else if (argv[i] == std::string("--errors")) {
             cerror.enabled = true;
+        } else if (argv[i][0] == '-') {
+            std::cerr << "unknown option " << argv[i] << "\n";
+            return 1;
         } else if (!gamefile.empty()) {
             std::cerr << "unrecognized option " << argv[i] << "\n";
             return 1;

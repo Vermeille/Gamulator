@@ -7,6 +7,7 @@
 #include <type_traits>
 
 struct NextWord {
+    static const int cycles = 8;
     static Data16 GetW(Z80* p) {
         Data16 w;
         p->next_opcode();
@@ -25,6 +26,7 @@ struct NextWord {
 };
 
 struct NextByte {
+    static const int cycles = 4;
     static Data8 Get(Z80* p) {
         p->next_opcode();
         return p->_addr.Get(p->_pc.u);
@@ -37,6 +39,7 @@ struct NextByte {
 
 template <class Addr>
 struct ToAddr {
+    static const int cycles = 4 + Addr::cycles;
     static inline Data16 GetW(Z80* p) {
         auto addr = Addr::GetW(p).u;
         Data16 w;
@@ -79,6 +82,7 @@ struct ToAddr {
 
 template <class Addr>
 struct ToAddrFF00 {
+    static const int cycles = 4 + Addr::cycles;
     static inline Data8 Get(Z80* p) {
         Data8 offset = Addr::Get(p);
         auto addr = 0xFF00 + offset.u;
@@ -115,7 +119,7 @@ struct I {
 
 template <class, class>
 struct DAA {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         int16_t a = Z80::Register<Z80::A>::Get(p).u;
         if (!p->sub_f()) {
             if ((a & 0x0F) > 9 || p->hcarry_f()) {
@@ -140,14 +144,15 @@ struct DAA {
         }
         Z80::Register<Z80::A>::Set(p, int8_t(a & 0xFF));
         p->next_opcode();
+        return 4;
     }
 
     static void Print(Z80*) { cinstr << "daa\n"; }
 };
 
-template <class Val, class sdfs>
+template <class Val, class>
 struct RLC {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         Data8 res = Val::Get(p);
 
         res.u = (res.u << 1) | ((res.u >> 7) & 1);
@@ -159,6 +164,7 @@ struct RLC {
 
         Val::Set(p, res);
         p->next_opcode();
+        return 8 + 2 * Val::cycles;
     }
 
     static void Print(Z80* p) {
@@ -170,7 +176,7 @@ struct RLC {
 
 template <class, class>
 struct RLCA {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         Data8 res = Z80::Register<Z80::A>::Get(p);
 
         res.u = (res.u << 1) | ((res.u >> 7) & 1);
@@ -182,6 +188,7 @@ struct RLCA {
 
         Z80::Register<Z80::A>::Set(p, res);
         p->next_opcode();
+        return 4;
     }
 
     static void Print(Z80*) { cinstr << "rlca\n"; }
@@ -189,7 +196,7 @@ struct RLCA {
 
 template <class Val, class sdfs>
 struct RRC {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         Data8 res = Val::Get(p);
 
         res.u = (res.u >> 1) | ((res.u & 1) << 7);
@@ -201,6 +208,7 @@ struct RRC {
 
         Val::Set(p, res);
         p->next_opcode();
+        return 8 + 2 * Val::cycles;
     }
 
     static void Print(Z80* p) {
@@ -212,7 +220,7 @@ struct RRC {
 
 template <class, class>
 struct RRCA {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         Data8 res = Z80::Register<Z80::A>::Get(p);
 
         int c = res.u & 1;
@@ -225,14 +233,15 @@ struct RRCA {
 
         Z80::Register<Z80::A>::Set(p, res);
         p->next_opcode();
+        return 4;
     }
 
     static void Print(Z80*) { cinstr << "rrca\n"; }
 };
 
-template <class Val, class sdfs>
+template <class Val, class>
 struct RL {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         Data8 res = Val::Get(p);
         int c = p->carry_f();
 
@@ -246,6 +255,7 @@ struct RL {
 
         Val::Set(p, res);
         p->next_opcode();
+        return 8 + 2 * Val::cycles;
     }
 
     static void Print(Z80* p) {
@@ -257,7 +267,7 @@ struct RL {
 
 template <class, class>
 struct RLA {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         Data8 res = Z80::Register<Z80::A>::Get(p);
         int c = p->carry_f();
 
@@ -271,6 +281,7 @@ struct RLA {
 
         Z80::Register<Z80::A>::Set(p, res);
         p->next_opcode();
+        return 4;
     }
 
     static void Print(Z80*) { cinstr << "rla\n"; }
@@ -278,7 +289,7 @@ struct RLA {
 
 template <class Val, class>
 struct RR {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         Data8 res = Val::Get(p);
         int c = p->carry_f() ? 1 : 0;
 
@@ -293,6 +304,7 @@ struct RR {
 
         Val::Set(p, res);
         p->next_opcode();
+        return 8 + 2 * Val::cycles;
     }
     static void Print(Z80* p) {
         cinstr << "rr ";
@@ -303,7 +315,7 @@ struct RR {
 
 template <class, class>
 struct RRA {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         Data8 res = Z80::Register<Z80::A>::Get(p);
         int c = p->carry_f();
 
@@ -317,6 +329,7 @@ struct RRA {
 
         Z80::Register<Z80::A>::Set(p, res);
         p->next_opcode();
+        return 4;
     }
     static void Print(Z80* p) {
         cinstr << "rra ";
@@ -327,11 +340,12 @@ struct RRA {
 
 template <class Bit, class A>
 struct RES {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         Data8 res = A::Get(p);
         res.u = res.u & ~(1 << Bit::Get().u);
         A::Set(p, res);
         p->next_opcode();
+        return 8 + 2 * A::cycles;
     }
     static void Print(Z80* p) {
         cinstr << "res " << Bit::Get() << ", ";
@@ -342,9 +356,10 @@ struct RES {
 
 template <class Bit, class A>
 struct SET {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         A::Set(p, uint8_t(A::Get(p).u | (1 << Bit::Get().u)));
         p->next_opcode();
+        return 8 + 2 * A::cycles;
     }
     static void Print(Z80* p) {
         cinstr << "set " << Bit::Get() << ", ";
@@ -355,11 +370,12 @@ struct SET {
 
 template <class Bit, class R>
 struct BIT {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         p->set_zero_f(!(R::Get(p).u & (1 << Bit::Get().u)));
         p->set_sub_f(0);
         p->set_hcarry_f(1);
         p->next_opcode();
+        return 8 + R::cycles;
     }
 
     static void Print(Z80* p) {
@@ -371,13 +387,14 @@ struct BIT {
 
 template <class A, class>
 struct CPL {
-    static inline void Do(Z80* p) {
+    static inline int Do(Z80* p) {
         uint8_t r = 0xFF ^ A::Get(p).u;
         A::Set(p, r);
 
         p->set_sub_f(1);
         p->set_hcarry_f(1);
         p->next_opcode();
+        return 4;
     }
 
     static void Print(Z80* p) {
@@ -389,11 +406,12 @@ struct CPL {
 
 template <class A, class>
 struct SCF {
-    static inline void Do(Z80* p) {
+    static inline int Do(Z80* p) {
         p->set_sub_f(false);
         p->set_hcarry_f(false);
         p->set_carry_f(true);
         p->next_opcode();
+        return 4;
     }
     static void Print(Z80*) {
         cinstr << "scf ";
@@ -403,11 +421,12 @@ struct SCF {
 
 template <class A, class>
 struct CCF {
-    static inline void Do(Z80* p) {
+    static inline int Do(Z80* p) {
         p->set_sub_f(false);
         p->set_hcarry_f(false);
         p->set_carry_f(!p->carry_f());
         p->next_opcode();
+        return 4;
     }
     static void Print(Z80*) {
         cinstr << "ccf ";
@@ -417,7 +436,7 @@ struct CCF {
 
 template <class Val, class>
 struct INC {
-    static inline void Do(Z80* p) {
+    static inline int Do(Z80* p) {
         Data8 res = Val::Get(p);
         p->set_hcarry_f((res.u & 0xf) == 0xf);
         ++res.u;
@@ -426,6 +445,7 @@ struct INC {
         p->set_zero_f(res.u == 0);
         p->set_sub_f(false);
         p->next_opcode();
+        return 4 + 2 * Val::cycles;
     }
     static void Print(Z80* p) {
         cinstr << "inc ";
@@ -436,11 +456,12 @@ struct INC {
 
 template <class Val, class>
 struct INCw {
-    static inline void Do(Z80* p) {
+    static inline int Do(Z80* p) {
         Data16 res = Val::GetW(p);
         res.u += 1;
         Val::SetW(p, res);
         p->next_opcode();
+        return 8;
     }
     static void Print(Z80* p) {
         cinstr << "inc ";
@@ -451,7 +472,7 @@ struct INCw {
 
 template <class Val, class>
 struct DEC {
-    static inline void Do(Z80* p) {
+    static inline int Do(Z80* p) {
         Data8 res = Val::Get(p);
         p->set_hcarry_f((res.u & 0xf) == 0);
         --res.u;
@@ -460,6 +481,7 @@ struct DEC {
         p->set_zero_f(res.u == 0);
         p->set_sub_f(1);
         p->next_opcode();
+        return 4 + 2 * Val::cycles;
     }
 
     static void Print(Z80* p) {
@@ -471,11 +493,12 @@ struct DEC {
 
 template <class Val, class>
 struct DECw {
-    static inline void Do(Z80* p) {
+    static inline int Do(Z80* p) {
         Data16 r = Val::GetW(p);
         r.u -= 1;
         Val::SetW(p, r);
         p->next_opcode();
+        return 8;
     }
 
     static void Print(Z80* p) {
@@ -487,7 +510,7 @@ struct DECw {
 
 template <class A, class B>
 struct ADD {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         Data8 a = A::Get(p);
         Data8 b = B::Get(p);
         uint16_t res = a.u + b.u;
@@ -499,6 +522,7 @@ struct ADD {
 
         A::Set(p, uint8_t(res & 0xFF));
         p->next_opcode();
+        return 4 + A::cycles + B::cycles;
     }
 
     static void Print(Z80* p) {
@@ -512,7 +536,7 @@ struct ADD {
 
 template <class A, class B>
 struct ADDw {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         Data16 a = A::GetW(p);
         Data16 b = B::GetW(p);
         uint32_t res = a.u + b.u;
@@ -523,6 +547,7 @@ struct ADDw {
 
         A::SetW(p, uint16_t(res & 0xFFFF));
         p->next_opcode();
+        return 8;
     }
 
     static void Print(Z80* p) {
@@ -536,7 +561,7 @@ struct ADDw {
 
 template <class A, class B>
 struct ADDO {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         Data16 a = A::GetW(p);
         Data8 b = B::Get(p);
         Data16 res;
@@ -550,6 +575,7 @@ struct ADDO {
 
         A::SetW(p, res);
         p->next_opcode();
+        return 16;
     }
 
     static void Print(Z80* p) {
@@ -563,7 +589,7 @@ struct ADDO {
 
 template <class A, class B>
 struct ADC {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         Data8 a = A::Get(p);
         Data8 b = B::Get(p);
         uint16_t res = a.u + b.u + p->carry_f();
@@ -575,6 +601,7 @@ struct ADC {
 
         A::Set(p, uint8_t(res & 0xFF));
         p->next_opcode();
+        return 4 + A::cycles + B::cycles;
     }
 
     static void Print(Z80* p) {
@@ -588,7 +615,7 @@ struct ADC {
 
 template <class A, class B>
 struct SUB {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         Data8 a = A::Get(p);
         Data8 b = B::Get(p);
         Data8 res;
@@ -602,6 +629,7 @@ struct SUB {
 
         A::Set(p, res);
         p->next_opcode();
+        return 4 + A::cycles + B::cycles;
     }
 
     static void Print(Z80* p) {
@@ -615,7 +643,7 @@ struct SUB {
 
 template <class A, class B>
 struct SBC {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         Data8 a = A::Get(p);
         Data8 b = B::Get(p);
         Data8 res;
@@ -629,6 +657,7 @@ struct SBC {
 
         A::Set(p, res);
         p->next_opcode();
+        return 4 + A::cycles + B::cycles;
     }
 
     static void Print(Z80* p) {
@@ -642,7 +671,7 @@ struct SBC {
 
 template <class A, class B>
 struct AND {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         uint8_t res = A::Get(p).u & B::Get(p).u;
 
         p->set_zero_f(res == 0);
@@ -652,6 +681,7 @@ struct AND {
 
         A::Set(p, res);
         p->next_opcode();
+        return 4 + A::cycles + B::cycles;
     }
 
     static void Print(Z80* p) {
@@ -665,7 +695,7 @@ struct AND {
 
 template <class A, class B>
 struct XOR {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         uint8_t res = A::Get(p).u ^ B::Get(p).u;
 
         p->set_zero_f(res == 0);
@@ -675,6 +705,7 @@ struct XOR {
 
         A::Set(p, res);
         p->next_opcode();
+        return 4 + A::cycles + B::cycles;
     }
 
     static void Print(Z80* p) {
@@ -688,7 +719,7 @@ struct XOR {
 
 template <class A, class B>
 struct OR {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         uint8_t res = A::Get(p).u | B::Get(p).u;
 
         p->set_zero_f(res == 0);
@@ -698,6 +729,7 @@ struct OR {
 
         A::Set(p, res);
         p->next_opcode();
+        return 4 + A::cycles + B::cycles;
     }
 
     static void Print(Z80* p) {
@@ -711,7 +743,7 @@ struct OR {
 
 template <class A, class>
 struct SRL {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         Data8 a = A::Get(p);
 
         p->set_sub_f(false);
@@ -724,6 +756,7 @@ struct SRL {
 
         A::Set(p, a);
         p->next_opcode();
+        return 8 + 2 * A::cycles;
     }
     static void Print(Z80* p) {
         cinstr << "srl ";
@@ -734,7 +767,7 @@ struct SRL {
 
 template <class A, class>
 struct SLA {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         Data8 a = A::Get(p);
 
         p->set_carry_f(GetBit(a.u, 7));
@@ -746,6 +779,7 @@ struct SLA {
 
         A::Set(p, a);
         p->next_opcode();
+        return 8 + 2 * A::cycles;
     }
     static void Print(Z80* p) {
         cinstr << "sla ";
@@ -756,7 +790,7 @@ struct SLA {
 
 template <class A, class>
 struct SRA {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         Data8 a = A::Get(p);
 
         p->set_carry_f(GetBit(a.u, 0));
@@ -769,6 +803,7 @@ struct SRA {
 
         A::Set(p, a);
         p->next_opcode();
+        return 8 + 2 * A::cycles;
     }
     static void Print(Z80* p) {
         cinstr << "sla ";
@@ -779,7 +814,7 @@ struct SRA {
 
 template <class A, class B>
 struct CP {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         auto a = A::Get(p).u;
         auto b = B::Get(p).u;
 
@@ -788,6 +823,7 @@ struct CP {
         p->set_hcarry_f((a & 0xf) < (b & 0xf));
         p->set_carry_f(a < b);
         p->next_opcode();
+        return 4 + A::cycles + B::cycles;
     }
 
     static void Print(Z80* p) {
@@ -801,7 +837,7 @@ struct CP {
 
 template <class A, class>
 struct SWAP {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         Data8 res = A::Get(p);
 
         res.u = (res.u << 4) | (res.u >> 4);
@@ -811,6 +847,7 @@ struct SWAP {
         p->set_hcarry_f(false);
         p->set_carry_f(false);
         p->next_opcode();
+        return 8 + 2 * A::cycles;
     }
     static void Print(Z80* p) {
         cinstr << "swap ";
@@ -821,12 +858,13 @@ struct SWAP {
 
 template <class A, class>
 struct POP {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         A::SetW(p, ToAddr<Z80::Register<Z80::SP>>::GetW(p));
         Data16 sp = Z80::Register<Z80::SP>::GetW(p);
         sp.u += 2;
         Z80::Register<Z80::SP>::SetW(p, sp);
         p->next_opcode();
+        return 12;
     }
     static void Print(Z80* p) {
         cinstr << "pop ";
@@ -864,14 +902,16 @@ struct NZ {
 
 template <class Test, class A, class>
 struct JR_Impl {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         Data16 pc = Z80::Register<Z80::PC>::GetW(p);
         Data8 jmp = A::Get(p);
         pc.u += jmp.s + 2;
         if (Test::Do(p)) {
             Z80::Register<Z80::PC>::SetW(p, pc);
+            return 12;
         } else {
             p->next_opcode();
+            return 8;
         }
     }
     static void Print(Z80* p) {
@@ -900,12 +940,17 @@ using JRNC = JR_Impl<NC, A, B>;
 
 template <class Test, class A, class fghdl>
 struct RET_Impl {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         if (Test::Do(p)) {
             POP<Z80::Register<Z80::PC>, void>::Do(p);
             --p->_pc.u;
+            return std::conditional_t<std::is_same<Test, True>::value,
+                                      I<16>,
+                                      I<20>>::Get()
+                .u;
         } else {
             p->next_opcode();
+            return 8;
         }
     }
     static void Print(Z80* p) {
@@ -930,14 +975,16 @@ using RETC = RET_Impl<IfC, A, B>;
 template <class A, class B>
 using RETNC = RET_Impl<NC, A, B>;
 
-template <class Test, class A, class fghdl>
+template <class Test, class A, class>
 struct JP_Impl {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         Data16 jmp = A::GetW(p);
         if (Test::Do(p)) {
             Z80::Register<Z80::PC>::SetW(p, jmp);
+            return 8 + A::cycles;  // FIXME: should be 4 for jp HL
         } else {
             p->next_opcode();
+            return 12;
         }
     }
     static void Print(Z80* p) {
@@ -966,12 +1013,13 @@ using JPNC = JP_Impl<NC, A, B>;
 
 template <class A, class>
 struct PUSH {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         Data16 sp = Z80::Register<Z80::SP>::GetW(p);
         sp.u -= 2;
         Z80::Register<Z80::SP>::SetW(p, sp);
         ToAddr<Z80::Register<Z80::SP>>::SetW(p, A::GetW(p));
         p->next_opcode();
+        return 16;
     }
     static void Print(Z80* p) {
         cinstr << "push ";
@@ -982,7 +1030,7 @@ struct PUSH {
 
 template <class Test, class A, class>
 struct CALL_Impl {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         Data16 addr = A::GetW(p);
         if (Test::Do(p)) {
             p->next_opcode();  // move PAST the CALL so that we save the
@@ -990,8 +1038,10 @@ struct CALL_Impl {
             PUSH<Z80::Register<Z80::PC>, void>::Do(p);
 
             Z80::Register<Z80::PC>::SetW(p, addr);
+            return 24;
         } else {
             p->next_opcode();
+            return 12;
         }
     }
     static void Print(Z80* p) {
@@ -1019,22 +1069,20 @@ template <class A, class B>
 using CALLNC = CALL_Impl<NC, A, B>;
 
 template <class, class>
-struct Nop {};
-
-template <>
-void Z80::Instr<Nop, void, void>::Do(Z80* p) {
-    p->next_opcode();
-}
-template <>
-void Z80::Instr<Nop, void, void>::Print(Z80*) {
-    cinstr << "nop" << std::endl;
-}
+struct Nop {
+    static int Do(Z80* p) {
+        p->next_opcode();
+        return 4;
+    }
+    void Print(Z80*) { cinstr << "nop" << std::endl; }
+};
 
 template <class A, class B>
 struct LD {
-    static inline void Do(Z80* proc) {
+    static inline int Do(Z80* proc) {
         A::Set(proc, B::Get(proc));
         proc->next_opcode();
+        return 4 + A::cycles + B::cycles;
     }
     static void Print(Z80* p) {
         cinstr << "ld ";
@@ -1047,9 +1095,10 @@ struct LD {
 
 template <class A, class B>
 struct LDw {
-    static inline void Do(Z80* proc) {
+    static inline int Do(Z80* proc) {
         A::SetW(proc, B::GetW(proc));
         proc->next_opcode();
+        return 12;
     }
     static void Print(Z80* p) {
         cinstr << "ld ";
@@ -1062,7 +1111,7 @@ struct LDw {
 
 template <class, class>
 struct LDHLSPN {
-    static inline void Do(Z80* p) {
+    static inline int Do(Z80* p) {
         Data16 a = Z80::Register<Z80::SP>::GetW(p);
         Data8 offset = NextByte::Get(p);
         int res = a.u + offset.s;
@@ -1073,6 +1122,7 @@ struct LDHLSPN {
         a.u = res;
         Z80::Register<Z80::HL>::SetW(p, a);
         p->next_opcode();
+        return 12;
     }
     static void Print(Z80* p) {
         cinstr << "ldhl ";
@@ -1088,12 +1138,13 @@ struct LDD;
 
 template <class A, class B>
 struct LDD<ToAddr<A>, B> {
-    static inline void Do(Z80* proc) {
+    static inline int Do(Z80* proc) {
         Data16 addr = A::GetW(proc);
         ToAddr<A>::Set(proc, B::Get(proc));
         --addr.u;
         A::SetW(proc, addr);
         proc->next_opcode();
+        return 8;
     }
     static void Print(Z80* p) {
         cinstr << "ldd (";
@@ -1106,12 +1157,13 @@ struct LDD<ToAddr<A>, B> {
 
 template <class A, class B>
 struct LDD<A, ToAddr<B>> {
-    static inline void Do(Z80* proc) {
+    static inline int Do(Z80* proc) {
         Data16 addr = B::GetW(proc);
         A::Set(proc, proc->_addr.Get(addr.u));
         --addr.u;
         B::SetW(proc, addr);
         proc->next_opcode();
+        return 8;
     }
     static void Print(Z80* p) {
         cinstr << "ldd ";
@@ -1127,12 +1179,13 @@ struct LDI;
 
 template <class A, class B>
 struct LDI<ToAddr<A>, B> {
-    static inline void Do(Z80* proc) {
+    static inline int Do(Z80* proc) {
         Data16 addr = A::GetW(proc);
         proc->_addr.Set(addr.u, B::Get(proc));
         ++addr.u;
         A::SetW(proc, addr);
         proc->next_opcode();
+        return 8;
     }
     static void Print(Z80* p) {
         cinstr << "ldi ";
@@ -1145,12 +1198,13 @@ struct LDI<ToAddr<A>, B> {
 
 template <class A, class B>
 struct LDI<A, ToAddr<B>> {
-    static inline void Do(Z80* proc) {
+    static inline int Do(Z80* proc) {
         Data16 addr = B::GetW(proc);
         A::Set(proc, proc->_addr.Get(addr.u));
         ++addr.u;
         B::SetW(proc, addr);
         proc->next_opcode();
+        return 8;
     }
     static void Print(Z80* p) {
         cinstr << "ldi ";
@@ -1163,38 +1217,49 @@ struct LDI<A, ToAddr<B>> {
 
 template <class, class>
 struct EI {
-    static inline void Do(Z80* p) {
+    static inline int Do(Z80* p) {
         p->set_interrupts(0xFF);
         p->next_opcode();
+        return 4;
     }
     static void Print(Z80*) { cinstr << "ei" << std::endl; }
 };
 template <class, class>
 struct DI {
-    static inline void Do(Z80* p) {
+    static inline int Do(Z80* p) {
         p->set_interrupts(0);
         p->next_opcode();
+        return 4;
     }
     static void Print(Z80*) { cinstr << "di" << std::endl; }
 };
 
-typedef Z80::Instr<Nop, void, void> NOP;
+template <class, class>
+struct NOP {
+    static inline int Do(Z80* p) {
+        p->next_opcode();
+        return 4;
+    }
+    static void Print(Z80*) { cinstr << "nop" << std::endl; }
+};
 
 template <class, class>
 struct HALT {
-    static inline void Do(Z80* p) {
+    static inline int Do(Z80* p) {
         p->set_halt(true);
         p->next_opcode();
+        return 4;
     }
     static void Print(Z80*) { cinstr << "halt" << std::endl; }
 };
 
 template <uint16_t Addr, class, class>
 struct RST_Impl {
-    static void Do(Z80* p) {
+    static int Do(Z80* p) {
         p->set_interrupts(0x00);
         CALL<I<Addr>, void>::Do(p);
         cinstr << "interrupt caught by " << std::hex << Addr << std::endl;
+        return 16;
     }
     static void Print(Z80*) {
         cinstr << "rst 0x" << std::hex << Addr << std::endl;
@@ -1242,24 +1307,30 @@ using RST60 = RST_Impl<0x60, A, B>;
 
 template <class, class>
 struct RETI {
-    static inline void Do(Z80* p) {
+    static const int cycles = 16;
+    static inline int Do(Z80* p) {
         p->set_interrupts(0xFF);
         RET<void, void>::Do(p);
+        return 16;
     }
     static void Print(Z80*) { cinstr << "reti" << std::endl; }
 };
 
 template <class, class>
 struct STOP {
-    static inline void Do(Z80* p) { HALT<void, void>::Do(p); }
+    static inline int Do(Z80* p) {
+        HALT<void, void>::Do(p);
+        return 4;
+    }
     static void Print(Z80*) { cinstr << "stop" << std::endl; }
 };
 
 template <class, class>
 struct EXTENDED {
-    static inline void Do(Z80* p) {
+    static inline int Do(Z80* p) {
         p->next_opcode();
-        p->RunCBOpcode(p->_addr.Get(Z80::Register<Z80::PC>::GetW(p).u).u);
+        return p->RunCBOpcode(
+            p->_addr.Get(Z80::Register<Z80::PC>::GetW(p).u).u);
     }
     static void Print(Z80* p) {
         cinstr << std::hex << int(p->_addr.Get(p->_pc.u + 1).u) << " ";

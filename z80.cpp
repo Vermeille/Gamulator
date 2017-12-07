@@ -8,10 +8,8 @@
 
 #include "instruction.hpp"
 
-std::array<std::function<void(Z80*)>, 256> Z80::_instr;
-std::array<std::function<void(Z80*)>, 256> Z80::_cb_instr;
-std::array<std::function<void(Z80*)>, 256> Z80::_print;
-std::array<std::function<void(Z80*)>, 256> Z80::_cb_print;
+std::array<std::unique_ptr<Z80::InstrBase>, 256> Z80::_instr;
+std::array<std::unique_ptr<Z80::InstrBase>, 256> Z80::_cb_instr;
 
 Z80::Z80(AddressBus& addr, Video& v, LinkCable& lk, Timer& timer)
     : _sp(uint16_t(0xFFFE)),
@@ -63,7 +61,7 @@ Z80::Z80(AddressBus& addr, Video& v, LinkCable& lk, Timer& timer)
     _addr.Set(0xFF4B, uint8_t(0x00));  // WX
     _addr.Set(0xFFFF, uint8_t(0x00));  // IE
 
-    RegisterOpcode<0x00, NOP>();
+    RegisterOpcode<0x00, Instr<NOP, void, void>>();
     RegisterOpcode<0x01, Instr<LDw, Register<BC>, NextWord>>();
     RegisterOpcode<0x02, Instr<LD, ToAddr<Register<BC>>, Register<A>>>();
     RegisterOpcode<0x03, Instr<INCw, Register<BC>, void>>();
@@ -457,21 +455,20 @@ Z80::Z80(AddressBus& addr, Video& v, LinkCable& lk, Timer& timer)
     RegisterCBOpcode<0xEC, Instr<SET, I<5>, Register<H>>>();
 }
 
-void Z80::RunOpcode(byte op) { _instr[op](this); }
-void Z80::RunCBOpcode(byte op) { _cb_instr[op](this); }
+int Z80::RunOpcode(byte op) { return _instr[op]->Do(this); }
+int Z80::RunCBOpcode(byte op) { return _cb_instr[op]->Do(this); }
 
 void Z80::Process() {
     int cycles = 0;
     while (true) {
         if (!halted()) {
-            if (cycles == 8) {
+            if (cycles == 0) {
                 cinstr << "0x" << std::hex << _pc.u << "\t"
                        << int(_addr.Get(_pc.u).u) << "\t";
                 PrintInstr(_addr.Get(_pc.u).u, this);
-                RunOpcode(_addr.Get(_pc.u).u);
-                cycles = 1;
+                cycles = RunOpcode(_addr.Get(_pc.u).u);
             } else {
-                ++cycles;
+                --cycles;
             }
         }
 
@@ -497,8 +494,8 @@ void Z80::Process() {
     }
 }
 
-void Z80::PrintInstr(uint8_t op, Z80* p) { _print[op](p); }
-void Z80::PrintCBInstr(uint8_t op, Z80* p) { _cb_print[op](p); }
+void Z80::PrintInstr(uint8_t op, Z80* p) { _instr[op]->Print(p); }
+void Z80::PrintCBInstr(uint8_t op, Z80* p) { _cb_instr[op]->Print(p); }
 
 void Z80::ProcessInterrupts() {
     byte ints = _addr.Get(0xFFFF).u & _addr.Get(0xFF0F).u & _interrupts;
@@ -529,14 +526,12 @@ void Z80::ProcessInterrupts() {
 
 template <unsigned char Opcode, class Inst>
 void Z80::RegisterOpcode() {
-    _instr[Opcode] = std::function<void(Z80*)>(&Inst::Do);
-    _print[Opcode] = std::function<void(Z80*)>(&Inst::Print);
+    _instr[Opcode] = std::make_unique<Inst>();
 }
 
 template <unsigned char Opcode, class Inst>
 void Z80::RegisterCBOpcode() {
-    _cb_instr[Opcode] = std::function<void(Z80*)>(&Inst::Do);
-    _cb_print[Opcode] = std::function<void(Z80*)>(&Inst::Print);
+    _cb_instr[Opcode] = std::make_unique<Inst>();
 }
 
 void Z80::set_interrupts(byte enable) { _interrupts = enable; }

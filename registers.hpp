@@ -4,6 +4,7 @@
 
 template <>
 struct Z80::Register<Z80::B> {
+    static const int cycles = 0;
     static inline Data8 Get(const Z80* proc) { return proc->_regs[0]; }
 
     static inline void Set(Z80* proc, Data8 val) { proc->_regs[0] = val; }
@@ -12,6 +13,7 @@ struct Z80::Register<Z80::B> {
 
 template <>
 struct Z80::Register<Z80::C> {
+    static const int cycles = 0;
     static inline Data8 Get(const Z80* proc) { return proc->_regs[1]; }
 
     static inline void Set(Z80* proc, Data8 val) { proc->_regs[1] = val; }
@@ -20,6 +22,7 @@ struct Z80::Register<Z80::C> {
 
 template <>
 struct Z80::Register<Z80::D> {
+    static const int cycles = 0;
     static inline Data8 Get(const Z80* proc) { return proc->_regs[2]; }
 
     static inline void Set(Z80* proc, Data8 val) { proc->_regs[2] = val; }
@@ -28,6 +31,7 @@ struct Z80::Register<Z80::D> {
 
 template <>
 struct Z80::Register<Z80::E> {
+    static const int cycles = 0;
     static inline Data8 Get(const Z80* proc) { return proc->_regs[3]; }
 
     static inline void Set(Z80* proc, Data8 val) { proc->_regs[3] = val; }
@@ -36,6 +40,7 @@ struct Z80::Register<Z80::E> {
 
 template <>
 struct Z80::Register<Z80::H> {
+    static const int cycles = 0;
     static inline Data8 Get(const Z80* proc) { return proc->_regs[4]; }
 
     static inline void Set(Z80* proc, Data8 val) { proc->_regs[4] = val; }
@@ -44,6 +49,7 @@ struct Z80::Register<Z80::H> {
 
 template <>
 struct Z80::Register<Z80::L> {
+    static const int cycles = 0;
     static inline Data8 Get(const Z80* proc) { return proc->_regs[5]; }
 
     static inline void Set(Z80* proc, Data8 val) { proc->_regs[5] = val; }
@@ -52,6 +58,7 @@ struct Z80::Register<Z80::L> {
 
 template <>
 struct Z80::Register<Z80::A> {
+    static const int cycles = 0;
     static inline Data8 Get(const Z80* proc) { return proc->_regs[7]; }
 
     static inline void Set(Z80* proc, Data8 val) { proc->_regs[7] = val; }
@@ -60,6 +67,7 @@ struct Z80::Register<Z80::A> {
 
 template <>
 struct Z80::Register<Z80::F> {
+    static const int cycles = 0;
     static inline Data8 Get(const Z80* proc) { return proc->_regs[6]; }
 
     static inline void Set(Z80* proc, Data8 val) { proc->_regs[6].u = val.u; }
@@ -68,6 +76,7 @@ struct Z80::Register<Z80::F> {
 
 template <>
 struct Z80::Register<Z80::AF> {
+    static const int cycles = 0;
     static inline Data16 GetW(const Z80* proc) {
         Data16 x;
         x.bytes.h = Z80::Register<A>::Get(proc);
@@ -84,6 +93,7 @@ struct Z80::Register<Z80::AF> {
 
 template <>
 struct Z80::Register<Z80::BC> {
+    static const int cycles = 0;
     static inline Data16 GetW(const Z80* proc) {
         Data16 x;
         x.bytes.h = Z80::Register<B>::Get(proc);
@@ -100,6 +110,7 @@ struct Z80::Register<Z80::BC> {
 
 template <>
 struct Z80::Register<Z80::DE> {
+    static const int cycles = 0;
     static inline Data16 GetW(const Z80* proc) {
         Data16 x;
         x.bytes.h = Z80::Register<D>::Get(proc);
@@ -116,6 +127,7 @@ struct Z80::Register<Z80::DE> {
 
 template <>
 struct Z80::Register<Z80::HL> {
+    static const int cycles = 0;
     static inline Data16 GetW(const Z80* proc) {
         Data16 x;
         x.bytes.h = Z80::Register<H>::Get(proc);
@@ -132,6 +144,7 @@ struct Z80::Register<Z80::HL> {
 
 template <>
 struct Z80::Register<Z80::SP> {
+    static const int cycles = 0;
     static inline Data16 GetW(const Z80* proc) { return proc->_sp; }
 
     static inline void SetW(Z80* proc, Data16 val) { proc->_sp = val; }
@@ -140,6 +153,7 @@ struct Z80::Register<Z80::SP> {
 
 template <>
 struct Z80::Register<Z80::PC> {
+    static const int cycles = 0;
     static inline Data16 GetW(const Z80* proc) { return proc->_pc; }
 
     static inline void SetW(Z80* proc, Data16 val) { proc->_pc = val; }

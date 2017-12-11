@@ -55,6 +55,10 @@ class Z80 {
     bool halted() const { return _halted; }
     void set_halt(bool x) { _halted = x; }
 
+    Data16 pc() const { return _pc; }
+    Data16& pc() { return _pc; }
+    AddressBus& addr() { return _addr; }
+
    private:
     template <unsigned char Opcode, class Instr>
     void RegisterOpcode();
@@ -74,7 +78,6 @@ class Z80 {
     template <class, class>
     friend struct HALT;
 
-   public:
     Data8 _regs[8];
     Data16 _sp;
     Data16 _pc;

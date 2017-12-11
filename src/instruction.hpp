@@ -11,16 +11,16 @@ struct NextWord {
     static Data16 GetW(Z80* p) {
         Data16 w;
         p->next_opcode();
-        w.bytes.l = p->_addr.Get(p->_pc.u);
+        w.bytes.l = p->addr().Get(p->pc().u);
         p->next_opcode();
-        w.bytes.h = p->_addr.Get(p->_pc.u);
+        w.bytes.h = p->addr().Get(p->pc().u);
         return w;
     }
 
     static void Print(Z80* p) {
         Data16 w;
-        w.bytes.l = p->_addr.Get(Z80::Register<Z80::PC>::GetW(p).u + 1);
-        w.bytes.h = p->_addr.Get(Z80::Register<Z80::PC>::GetW(p).u + 2);
+        w.bytes.l = p->addr().Get(Z80::Register<Z80::PC>::GetW(p).u + 1);
+        w.bytes.h = p->addr().Get(Z80::Register<Z80::PC>::GetW(p).u + 2);
         cinstr << w;
     }
 };
@@ -29,10 +29,10 @@ struct NextByte {
     static const int cycles = 4;
     static Data8 Get(Z80* p) {
         p->next_opcode();
-        return p->_addr.Get(p->_pc.u);
+        return p->addr().Get(p->pc().u);
     }
     static void Print(Z80* p) {
-        Data8 b = p->_addr.Get(Z80::Register<Z80::PC>::GetW(p).u + 1);
+        Data8 b = p->addr().Get(Z80::Register<Z80::PC>::GetW(p).u + 1);
         cinstr << b;
     }
 };
@@ -43,34 +43,34 @@ struct ToAddr {
     static inline Data16 GetW(Z80* p) {
         auto addr = Addr::GetW(p).u;
         Data16 w;
-        w.bytes.l = p->_addr.Get(addr);
-        w.bytes.h = p->_addr.Get(addr + 1);
+        w.bytes.l = p->addr().Get(addr);
+        w.bytes.h = p->addr().Get(addr + 1);
         cinstr << std::hex << "read word " << w << " at " << std::hex << addr
-               << "(" << p->_addr.Print(addr) << ")" << std::endl;
+               << "(" << p->addr().Print(addr) << ")" << std::endl;
         return w;
     }
 
     static inline void SetW(Z80* p, Data16 val) {
         auto addr = Addr::GetW(p).u;
-        p->_addr.Set(addr, uint8_t(val.u & 0xFF));
-        p->_addr.Set(addr + 1, uint8_t(val.u >> 8));
+        p->addr().Set(addr, uint8_t(val.u & 0xFF));
+        p->addr().Set(addr + 1, uint8_t(val.u >> 8));
         cinstr << std::hex << "set word " << val << " at " << std::hex << addr
-               << "(" << p->_addr.Print(addr) << ")" << std::endl;
+               << "(" << p->addr().Print(addr) << ")" << std::endl;
     }
 
     static inline Data8 Get(Z80* p) {
         word addr = Addr::GetW(p).u;
-        auto b = p->_addr.Get(addr);
+        auto b = p->addr().Get(addr);
         cinstr << std::hex << "  read byte " << b << " at " << std::hex << addr
-               << "(" << p->_addr.Print(addr) << ")" << std::endl;
+               << "(" << p->addr().Print(addr) << ")" << std::endl;
         return b;
     }
 
     static inline void Set(Z80* p, Data8 val) {
         auto addr = Addr::GetW(p).u;
-        p->_addr.Set(addr, val);
+        p->addr().Set(addr, val);
         cinstr << "  set byte " << std::hex << val << " at " << std::hex << addr
-               << "(" << p->_addr.Print(addr) << ")" << std::endl;
+               << "(" << p->addr().Print(addr) << ")" << std::endl;
     }
 
     static void Print(Z80* p) {
@@ -86,10 +86,10 @@ struct ToAddrFF00 {
     static inline Data8 Get(Z80* p) {
         Data8 offset = Addr::Get(p);
         auto addr = 0xFF00 + offset.u;
-        auto b = p->_addr.Get(addr);
+        auto b = p->addr().Get(addr);
 
         cinstr << std::hex << "  read byte " << int(b.u) << " at " << addr
-               << "(" << p->_addr.Print(addr) << ")" << std::endl;
+               << "(" << p->addr().Print(addr) << ")" << std::endl;
 
         return b;
     }
@@ -97,9 +97,9 @@ struct ToAddrFF00 {
     static inline void Set(Z80* p, Data8 val) {
         Data8 offset = Addr::Get(p);
         auto addr = 0xFF00 + offset.u;
-        p->_addr.Set(addr, val);
+        p->addr().Set(addr, val);
         cinstr << std::hex << "  set byte " << int(val.u) << " at " << addr
-               << "(" << p->_addr.Print(addr) << ")" << std::endl;
+               << "(" << p->addr().Print(addr) << ")" << std::endl;
     }
 
     static void Print(Z80* p) {
@@ -943,7 +943,7 @@ struct RET_Impl {
     static int Do(Z80* p) {
         if (Test::Do(p)) {
             POP<Z80::Register<Z80::PC>, void>::Do(p);
-            --p->_pc.u;
+            --p->pc().u;
             return std::conditional_t<std::is_same<Test, True>::value,
                                       I<16>,
                                       I<20>>::Get()
@@ -1159,7 +1159,7 @@ template <class A, class B>
 struct LDD<A, ToAddr<B>> {
     static inline int Do(Z80* proc) {
         Data16 addr = B::GetW(proc);
-        A::Set(proc, proc->_addr.Get(addr.u));
+        A::Set(proc, proc->addr().Get(addr.u));
         --addr.u;
         B::SetW(proc, addr);
         proc->next_opcode();
@@ -1181,7 +1181,7 @@ template <class A, class B>
 struct LDI<ToAddr<A>, B> {
     static inline int Do(Z80* proc) {
         Data16 addr = A::GetW(proc);
-        proc->_addr.Set(addr.u, B::Get(proc));
+        proc->addr().Set(addr.u, B::Get(proc));
         ++addr.u;
         A::SetW(proc, addr);
         proc->next_opcode();
@@ -1200,7 +1200,7 @@ template <class A, class B>
 struct LDI<A, ToAddr<B>> {
     static inline int Do(Z80* proc) {
         Data16 addr = B::GetW(proc);
-        A::Set(proc, proc->_addr.Get(addr.u));
+        A::Set(proc, proc->addr().Get(addr.u));
         ++addr.u;
         B::SetW(proc, addr);
         proc->next_opcode();
@@ -1330,11 +1330,11 @@ struct EXTENDED {
     static inline int Do(Z80* p) {
         p->next_opcode();
         return p->RunCBOpcode(
-            p->_addr.Get(Z80::Register<Z80::PC>::GetW(p).u).u);
+            p->addr().Get(Z80::Register<Z80::PC>::GetW(p).u).u);
     }
     static void Print(Z80* p) {
-        cinstr << std::hex << int(p->_addr.Get(p->_pc.u + 1).u) << " ";
-        Z80::PrintCBInstr(p->_addr.Get(p->_pc.u + 1).u, p);
+        cinstr << std::hex << int(p->addr().Get(p->pc().u + 1).u) << " ";
+        Z80::PrintCBInstr(p->addr().Get(p->pc().u + 1).u, p);
         cinstr << "\n";
     }
 };

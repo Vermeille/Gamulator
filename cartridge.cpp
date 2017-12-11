@@ -58,7 +58,7 @@ class MBC1 : public Cartridge::Controller {
                      0x1FFF,
                      [&](uint16_t idx) { return ReadRom(idx); },
                      [&](uint16_t, byte) {
-                         cerror << "RAM/Timer enable not implmented\n";
+                         // enable RAM aka do nothing
                      }},
                     {"rom_bank_0",
                      0x2000,

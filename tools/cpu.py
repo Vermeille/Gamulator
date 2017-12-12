@@ -18,25 +18,26 @@ def instrs(filepath):
 class Instr:
     def __init__(self, addr, code):
         self.addr = addr
+        self.iaddr = int(addr, 16)
         self.code = code
 
     def __eq__(self, i):
-        return self.addr == i.addr
+        return self.iaddr == i.iaddr
 
     def __ne__(self, i):
-        return self.addr != i.addr
+        return self.iaddr != i.iaddr
 
     def __lt__(self, i):
-        return self.addr < i.addr
+        return self.iaddr < i.iaddr
 
     def __le__(self, i):
-        return self.addr <= i.addr
+        return self.iaddr <= i.iaddr
 
     def __gt__(self, i):
-        return self.addr > i.addr
+        return self.iaddr > i.iaddr
 
     def __ge__(self, i):
-        return self.addr >= i.addr
+        return self.iaddr >= i.iaddr
 
 
 class CPU:

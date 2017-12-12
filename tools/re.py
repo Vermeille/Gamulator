@@ -17,7 +17,7 @@ class Function:
 
     def show(self):
         for i in self.instrs:
-            print(i.addr + '\t' + i.code)
+            print(Addr.get(i.addr) + '\t' + i.code)
 
 class Program:
     def __init__(self):

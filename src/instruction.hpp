@@ -815,13 +815,17 @@ struct SRA {
 template <class A, class B>
 struct CP {
     static int Do(Z80* p) {
-        auto a = A::Get(p).u;
-        auto b = B::Get(p).u;
+        Data8 a = A::Get(p);
+        Data8 b = B::Get(p);
+        Data8 res;
+        int r = a.u - b.u;
+        res.s = r;
 
-        p->set_zero_f(a == b);
+        p->set_zero_f(res.u == 0);
+        p->set_hcarry_f((a.s ^ b.s ^ res.s) & 0x10);
         p->set_sub_f(true);
-        p->set_hcarry_f((a & 0xf) < (b & 0xf));
-        p->set_carry_f(a < b);
+        p->set_carry_f(r & 0x100);
+
         p->next_opcode();
         return 4 + A::cycles + B::cycles;
     }

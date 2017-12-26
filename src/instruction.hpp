@@ -958,7 +958,7 @@ struct RET_Impl {
         }
     }
     static void Print(Z80* p) {
-        cinstr << "ret ";
+        cinstr << "ret";
         Test::Print(p);
         cinstr << std::endl;
     }

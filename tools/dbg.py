@@ -1,27 +1,5 @@
 from addr import Addr
-
-
-class JumpTracker:
-    def __init__(self, ty):
-        self.ty = ty
-        self.addr = None
-        self.is_jump = False
-
-    def happened(self, instr):
-        if instr.code.startswith(self.ty):
-            addr = instr.code.split()
-            if len(addr) == 1:
-                return True
-            addr = addr[1]
-            try:
-                self.addr = addr[:addr.index('/')]
-            except:
-                self.addr = addr
-            self.is_jump = True
-            return False
-        if self.is_jump:
-            self.is_jump = False
-            return instr.addr == self.addr
+from cpu import CallTracker, RetTracker, RstTracker
 
 
 class Continue:
@@ -36,7 +14,7 @@ class Next:
 
 class ToCall:
     def __init__(self):
-        self.call_tracker = JumpTracker('call')
+        self.call_tracker = CallTracker('call')
 
     def must_stop(self, instr):
         return self.call_tracker.happened(instr)
@@ -53,9 +31,9 @@ class ToRet:
 
 class Step:
     def __init__(self):
-        self.ret_tracker = JumpTracker('ret')
-        self.rst_tracker = JumpTracker('rst')
-        self.call_tracker = JumpTracker('call')
+        self.ret_tracker = RetTracker()
+        self.rst_tracker = RstTracker()
+        self.call_tracker = CallTracker()
         self.depth = 0
 
     def must_stop(self, instr):
@@ -104,9 +82,6 @@ class Debugger:
         while True:
             cmd, args = self.readcmd()
 
-            if cmd == 'bt':
-                for f in cpu.stack:
-                    print(f)
             if cmd == 'b':
                 self.breakpoints += args
             if cmd == 'c':

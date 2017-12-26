@@ -1,25 +1,12 @@
+from typing import Iterator
 from addr import Addr
 
-
-def instrs(filepath):
-    with open(filepath) as f:
-        for l in f.readlines():
-            if not l.startswith('0x'):
-                continue
-
-            tab = l.index('\t')
-            instr_tab = tab + 1 + l[tab + 1:].index('\t') + 1
-
-            addr = l[:tab]
-            instr = l[instr_tab:-1]
-
-            yield Instr(addr, instr)
-
 class Instr:
-    def __init__(self, addr, code):
+    def __init__(self, addr: str, code, is_interrupt) -> None:
         self.addr = addr
         self.iaddr = int(addr, 16)
         self.code = code
+        self._is_interrupt = is_interrupt
 
     def __eq__(self, i):
         return self.iaddr == i.iaddr
@@ -39,25 +26,112 @@ class Instr:
     def __ge__(self, i):
         return self.iaddr >= i.iaddr
 
+    @property
+    def is_interrupt(self) -> bool:
+        return self._is_interrupt
+
+
+def instrs(filepath: str) -> Iterator[Instr]:
+    with open(filepath) as f:
+        for l in f.readlines():
+            if l.startswith('0x'):
+                tab = l.index('\t')
+                instr_tab = tab + 1 + l[tab + 1:].index('\t') + 1
+
+                addr = l[:tab]
+                instr = l[instr_tab:-1]
+
+                yield Instr(addr, instr, is_interrupt=False)
+            elif l.startswith('INT'):
+                yield Instr(l.split()[1], 'INT', is_interrupt=True)
+
+class CallTracker:
+    def __init__(self) -> None:
+        self.prev = Instr('0x0', '', False)
+
+    def happened(self, instr: Instr) -> bool:
+        prev = self.prev
+        self.prev = instr
+
+        return self.is_call(prev) and self.get_addr(prev) == instr.iaddr
+
+    def is_call(self, i: Instr) -> bool:
+        return i.code.startswith('call')
+
+    def get_addr(self, i: Instr) -> int:
+        addr = i.code.split()[1]
+        addr = addr[:addr.index('/')]
+        return int(addr, 16)
+
+class RstTracker:
+    def __init__(self) -> None:
+        self.prev = Instr('0x0', '', False)
+
+    def happened(self, instr: Instr) -> bool:
+        prev = self.prev
+        self.prev = instr
+
+        return self.is_call(prev) and self.get_addr(prev) == instr.iaddr
+
+    def is_call(self, i: Instr) -> bool:
+        return i.code.startswith('rst')
+
+    def get_addr(self, i: Instr) -> int:
+        addr = i.code.split()[1]
+        return int(addr, 16)
+
+
+class FunCallTracker:
+    def __init__(self) -> None:
+        self.call_tracker = CallTracker()
+        self.rst_tracker = RstTracker()
+
+    def happened(self, instr: Instr) -> bool:
+        hap = instr.is_interrupt
+        hap = self.call_tracker.happened(instr) or hap
+        hap = self.rst_tracker.happened(instr) or hap
+        return hap
+
+class RetTracker:
+    def __init__(self) -> None:
+        self.prev = Instr('0x0', '', False)
+
+    def happened(self, instr: Instr) -> bool:
+        prev = self.prev
+        self.prev = instr
+
+        if prev.iaddr in Addr.as_ret:
+            return True
+        return self.is_ret(prev) and prev.iaddr + 1 != instr.iaddr
+
+    def is_ret(self, i: Instr) -> bool:
+        return i.code.startswith('ret')
+
+class Stack:
+    def __init__(self, init_addr: str) -> None:
+        self.stack = [init_addr]
+        self.call_tracker = FunCallTracker()
+        self.ret_tracker = RetTracker()
+
+    def feed(self, instr: Instr):
+        if self.call_tracker.happened(instr):
+            self.stack.append(instr.addr)
+        if self.ret_tracker.happened(instr):
+            self.stack.pop()
+
+    def current_frame(self):
+        return self.stack[-1]
 
 class CPU:
     def __init__(self):
-        self.is_call = False
-        self.is_ret = False
-        self.stack = [Addr.get('0x100')]
+        self.instr = None
+        self.stack = Stack('0x100')
 
-    def feed(self, instr):
+    def feed(self, instr: Instr):
         self.instr = instr
+        self.stack.feed(instr)
 
-        if self.is_call:
-            self.stack.append(instr.addr)
-        if self.is_ret:
-            self.stack.pop()
-
-        self.is_call = instr.code.startswith('call')
-        self.is_ret = instr.code.startswith('ret')
-
-    def execute(self, filepath):
+    def execute(self, filepath: str) -> Iterator[Instr]:
         for instr in instrs(filepath):
             self.feed(instr)
             yield instr

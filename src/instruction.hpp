@@ -886,7 +886,7 @@ struct True {
 struct IfC {
     static inline bool Do(Z80* p) { return p->carry_f(); }
 
-    static void Print(Z80* p) { cinstr << "C (" << p->carry_f() << ")"; }
+    static void Print(Z80* p) { cinstr << "C"; }
 };
 
 struct NC {
@@ -896,7 +896,7 @@ struct NC {
 
 struct IfZ {
     static inline bool Do(Z80* p) { return p->zero_f(); }
-    static void Print(Z80* p) { cinstr << "Z (" << p->zero_f() << ")"; }
+    static void Print(Z80* p) { cinstr << "Z"; }
 };
 
 struct NZ {

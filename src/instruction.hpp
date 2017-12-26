@@ -1257,12 +1257,22 @@ struct HALT {
     static void Print(Z80*) { cinstr << "halt" << std::endl; }
 };
 
-template <uint16_t Addr, class, class>
+template <uint16_t Addr, bool HasOpcode, class, class>
 struct RST_Impl {
     static int Do(Z80* p) {
         p->set_interrupts(0x00);
-        CALL<I<Addr>, void>::Do(p);
-        cinstr << "interrupt caught by " << std::hex << Addr << std::endl;
+        if (HasOpcode) {
+            p->next_opcode();
+        } else {
+            cinstr << "INT 0x" << std::hex << Addr << std::endl;
+            p->next_opcode();
+        }
+        Data16 sp = Z80::Register<Z80::SP>::GetW(p);
+        sp.u -= 2;
+        Z80::Register<Z80::SP>::SetW(p, sp);
+        ToAddr<Z80::Register<Z80::SP>>::SetW(p, p->pc());
+
+        Z80::Register<Z80::PC>::SetW(p, Addr);
         return 16;
     }
     static void Print(Z80*) {
@@ -1271,43 +1281,43 @@ struct RST_Impl {
 };
 
 template <class A, class B>
-using RST0 = RST_Impl<0x0, A, B>;
+using RST0 = RST_Impl<0x0, true, A, B>;
 
 template <class A, class B>
-using RST8 = RST_Impl<0x8, A, B>;
+using RST8 = RST_Impl<0x8, true, A, B>;
 
 template <class A, class B>
-using RST10 = RST_Impl<0x10, A, B>;
+using RST10 = RST_Impl<0x10, true, A, B>;
 
 template <class A, class B>
-using RST18 = RST_Impl<0x18, A, B>;
+using RST18 = RST_Impl<0x18, true, A, B>;
 
 template <class A, class B>
-using RST20 = RST_Impl<0x20, A, B>;
+using RST20 = RST_Impl<0x20, true, A, B>;
 
 template <class A, class B>
-using RST28 = RST_Impl<0x28, A, B>;
+using RST28 = RST_Impl<0x28, true, A, B>;
 
 template <class A, class B>
-using RST30 = RST_Impl<0x30, A, B>;
+using RST30 = RST_Impl<0x30, true, A, B>;
 
 template <class A, class B>
-using RST38 = RST_Impl<0x38, A, B>;
+using RST38 = RST_Impl<0x38, true, A, B>;
 
 template <class A, class B>
-using RST40 = RST_Impl<0x40, A, B>;
+using RST40 = RST_Impl<0x40, false, A, B>;
 
 template <class A, class B>
-using RST48 = RST_Impl<0x48, A, B>;
+using RST48 = RST_Impl<0x48, false, A, B>;
 
 template <class A, class B>
-using RST50 = RST_Impl<0x50, A, B>;
+using RST50 = RST_Impl<0x50, false, A, B>;
 
 template <class A, class B>
-using RST58 = RST_Impl<0x58, A, B>;
+using RST58 = RST_Impl<0x58, false, A, B>;
 
 template <class A, class B>
-using RST60 = RST_Impl<0x60, A, B>;
+using RST60 = RST_Impl<0x60, false, A, B>;
 
 template <class, class>
 struct RETI {

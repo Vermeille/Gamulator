@@ -74,9 +74,9 @@ struct ToAddr {
     }
 
     static void Print(Z80* p) {
-        cinstr << "(";
+        cinstr << "[";
         Addr::Print(p);
-        cinstr << ")";
+        cinstr << "]";
     }
 };
 
@@ -103,9 +103,9 @@ struct ToAddrFF00 {
     }
 
     static void Print(Z80* p) {
-        cinstr << "(0xFF00 + ";
+        cinstr << "[0xFF00 + ";
         Addr::Print(p);
-        cinstr << ")";
+        cinstr << "]";
     }
 };
 

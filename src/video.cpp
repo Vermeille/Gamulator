@@ -65,16 +65,33 @@ void Video::Render() {
     }
 
     _window.clear(sf::Color::Black);
-    for (int y = 0; y < 160; ++y) {
-        for (int x = 0; x < 144; ++x) {
-            Data8 tile = tilemap()[(x / 8) + (y / 8) * 32];
-            int color = GetTilePix(tile, y % 8, x % 8);
+    if (_ctrl.bg_display()) {
+        for (int y = 0; y < 160; ++y) {
+            for (int x = 0; x < 144; ++x) {
+                Data8 tile = bg_tilemap()[(x / 8) + (y / 8) * 32];
+                int color = GetTilePix(tile, y % 8, x % 8);
 
-            sf::RectangleShape r;
-            r.setSize(sf::Vector2f(4, 4));
-            r.setPosition(x * 4, y * 4);
-            r.setFillColor(colors[color]);
-            _window.draw(r);
+                sf::RectangleShape r;
+                r.setSize(sf::Vector2f(4, 4));
+                r.setPosition(x * 4, y * 4);
+                r.setFillColor(colors[color]);
+                _window.draw(r);
+            }
+        }
+    }
+
+    if (_ctrl.win_display_enable()) {
+        for (int y = 0; y < 160; ++y) {
+            for (int x = 0; x < 144; ++x) {
+                Data8 tile = win_tilemap()[(x / 8) + (y / 8) * 32];
+                int color = GetTilePix(tile, y % 8, x % 8);
+
+                sf::RectangleShape r;
+                r.setSize(sf::Vector2f(4, 4));
+                r.setPosition(x * 4, y * 4);
+                r.setFillColor(colors[color]);
+                _window.draw(r);
+            }
         }
     }
 

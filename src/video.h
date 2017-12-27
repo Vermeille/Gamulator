@@ -14,8 +14,8 @@ class LCDCtrl {
     void set_lcd_display_enable(bool d) { SetCtrlBit(7, d); }
     bool lcd_display_enable() const { return GetCtrlBit(7); }
 
-    void set_tile_map(int mode) { SetCtrlBit(6, mode); }
-    int tile_map() const { return GetCtrlBit(6); }
+    void set_win_tile_map(int mode) { SetCtrlBit(6, mode); }
+    int win_tile_map() const { return GetCtrlBit(6); }
 
     void set_win_display_enable(bool b) { SetCtrlBit(5, b); }
     bool win_display_enable() const { return GetCtrlBit(5); }
@@ -23,8 +23,8 @@ class LCDCtrl {
     void set_tile_data_mode(bool b) { SetCtrlBit(4, b); }
     bool tile_data_mode() const { return GetCtrlBit(4); }
 
-    void set_tile_map_mode(bool b) { SetCtrlBit(3, b); }
-    bool tile_map_mode() const { return GetCtrlBit(3); }
+    void set_bg_tile_map_mode(bool b) { SetCtrlBit(3, b); }
+    bool bg_tile_map_mode() const { return GetCtrlBit(3); }
 
     void set_sprite_size(int mode) { SetCtrlBit(2, mode); }
     bool sprite_size() const { return GetCtrlBit(2); }
@@ -117,21 +117,24 @@ class Video {
     byte ly_compare() const { return _ly_comp; }
     void set_ly_compare(byte v) { _ly_comp = v; }
 
-    const Data8* tilemap() const {
-        return &_vram[(_ctrl.tile_map_mode() ? 0x9C00u : 0x9800u) - 0x8000u];
+    const Data8* bg_tilemap() const {
+        return &_vram[(_ctrl.bg_tile_map_mode() ? 0x9C00u : 0x9800u) - 0x8000u];
     }
 
+    const Data8* win_tilemap() const {
+        return &_vram[(_ctrl.win_tile_map() ? 0x9C00u : 0x9800u) - 0x8000u];
+    }
     int8_t GetTilePix(Data8 tile, int32_t y, int32_t x) {
         uint32_t addr = 0;
         if (_ctrl.tile_data_mode()) {
-            addr = tile.u * 16 + y * 2;
+            addr = 0x8000 + tile.u * 16 + y * 2;
         } else {
-            addr = 0x800 + tile.s * 16 + y * 2;
+            addr = 0x9000 + tile.s * 16 + y * 2;
         }
         cdebug << addr << "\n";
 
-        int8_t l = (_vram[addr].u >> (7 - x)) & 1;
-        int8_t h = (_vram[addr + 1].u >> (7 - x)) & 1;
+        int8_t l = (_vram[addr - 0x8000].u >> (7 - x)) & 1;
+        int8_t h = (_vram[addr + 1 - 0x8000].u >> (7 - x)) & 1;
         return (h << 1) | l;
     }
 

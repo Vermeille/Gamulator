@@ -39,7 +39,7 @@ class MemSym:
 
 class Addr:
     symbols = [] # type: List[MemSym]
-    as_ret = []
+    as_ret = [] # type: List[int]
 
     @classmethod
     def init(cls, path: str):

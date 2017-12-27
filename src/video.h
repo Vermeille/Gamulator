@@ -90,10 +90,11 @@ class LCDStatus {
 
 class Video {
    public:
-    Video() : _window(sf::VideoMode(144 * 4, 160 * 4), "Gameboy") {
+    Video() : _window(sf::VideoMode(160 * 4, 144 * 4), "Gameboy") {
+        _disp.create(160 * 4, 144 * 4);
         _vram.fill(uint8_t(0));
         _oam.fill(uint8_t(0));
-        _window.setFramerateLimit(0);
+        _window.setFramerateLimit(2);
     }
 
     void set_lcdc(byte b) { _ctrl.Set(b); }
@@ -117,6 +118,24 @@ class Video {
     byte ly_compare() const { return _ly_comp; }
     void set_ly_compare(byte v) { _ly_comp = v; }
 
+    byte oam(uint16_t idx) const { return _oam[idx - 0xFE00u].u; }
+    void set_oam(uint16_t idx, byte v) { _oam[idx - 0xFE00u].u = v; }
+
+    byte win_y_pos() const { return _wy; }
+    void set_win_y_pos(byte x) { _wy = x; }
+
+    byte win_x_pos() const { return _wx + 7; }
+    void set_win_x_pos(byte x) { _wx = x - 7; }
+
+    bool vblank_int() const { return _vblank_int; }
+    bool stat_int() const {
+        return ((_ly_comp == _line) & _state.coincidence()) |
+               (_hblank_int & _state.hblank());
+    }
+
+    void Clock();
+
+   private:
     const Data8* bg_tilemap() const {
         return &_vram[(_ctrl.bg_tile_map_mode() ? 0x9C00u : 0x9800u) - 0x8000u];
     }
@@ -138,20 +157,9 @@ class Video {
         return (h << 1) | l;
     }
 
-    void Clock();
+    void NewFrame();
+    void Render(int line);
 
-    void Render();
-
-    byte oam(uint16_t idx) const { return _oam[idx - 0xFE00u].u; }
-    void set_oam(uint16_t idx, byte v) { _oam[idx - 0xFE00u].u = v; }
-
-    bool vblank_int() const { return _vblank_int; }
-    bool stat_int() const {
-        return ((_ly_comp == _line) & _state.coincidence()) |
-               (_hblank_int & _state.hblank());
-    }
-
-   private:
     int32_t _clock = 0;
     int32_t _line = 0;
     int32_t _ly_comp;
@@ -161,8 +169,11 @@ class Video {
     std::array<Data8, 0xFEA0 - 0xFE00> _oam;
     byte _scroll_x;
     byte _scroll_y;
+    byte _wy;
+    byte _wx;
 
     byte _vblank_int;
     byte _hblank_int;
     sf::RenderWindow _window;
+    sf::RenderTexture _disp;
 };

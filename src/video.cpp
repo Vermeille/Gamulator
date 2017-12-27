@@ -31,6 +31,7 @@ void Video::Clock() {
         _hblank_int = 1;
     } else if (mode == LCDStatus::HBLANK && _clock == 204) {
         _clock = 0;
+        Render(_line);
         ++_line;
         if (_line == 145) {
             _state.set_mode(LCDStatus::VBLANK);
@@ -44,54 +45,68 @@ void Video::Clock() {
         _clock = 0;
     }
     if (mode == LCDStatus::VBLANK && _line == 154) {
-        Render();
+        NewFrame();
         _line = 0;
         _clock = 0;
         _state.set_mode(LCDStatus::SEARCH_OAM);
     }
 }
 
-void Video::Render() {
-    cdebug << " RENDEEEEEEEEER\n";
-    std::vector<sf::Color> colors = {sf::Color(255, 255, 255),
-                                     sf::Color(192, 192, 192),
-                                     sf::Color(96, 96, 96),
-                                     sf::Color(0, 0, 0)};
-
+void Video::NewFrame() {
     sf::Event event;
     while (_window.pollEvent(event)) {
         // Request for closing the window
         if (event.type == sf::Event::Closed) _window.close();
     }
 
-    _window.clear(sf::Color::Black);
-    if (_ctrl.bg_display()) {
-        for (int y = 0; y < 160; ++y) {
-            for (int x = 0; x < 144; ++x) {
-                Data8 tile = bg_tilemap()[(x / 8) + (y / 8) * 32];
-                int color = GetTilePix(tile, y % 8, x % 8);
+    _disp.display();
+    auto persistence = sf::Sprite(_disp.getTexture());
+    _window.draw(persistence);
+    _window.display();
+    _window.clear(sf::Color::Blue);
+    _disp.clear(sf::Color::Red);
+    _disp.draw(persistence);
+    std::cerr << "NEW\n";
+}
 
-                sf::RectangleShape r;
-                r.setSize(sf::Vector2f(4, 4));
-                r.setPosition(x * 4, y * 4);
-                r.setFillColor(colors[color]);
-                _window.draw(r);
-            }
+void Video::Render(int line) {
+    std::vector<sf::Color> colors = {sf::Color(255, 255, 255),
+                                     sf::Color(192, 192, 192),
+                                     sf::Color(96, 96, 96),
+                                     sf::Color(0, 0, 0)};
+
+    const int y = line;
+    std::cerr << y << " " << _ctrl.bg_display() << "\n";
+    assert(y < 145);
+    if (_ctrl.bg_display()) {
+        for (int x = 0; x < 160; ++x) {
+            Data8 tile = bg_tilemap()[(x / 8) + (y / 8) * 32];
+            int color = GetTilePix(tile, y % 8, x % 8);
+
+            sf::RectangleShape r;
+            r.setSize(sf::Vector2f(4, 4));
+            r.setPosition(x * 4, y * 4);
+            r.setFillColor(colors[color]);
+            _disp.draw(r);
         }
     }
 
+#if 0
     if (_ctrl.win_display_enable()) {
-        for (int y = 0; y < 160; ++y) {
-            for (int x = 0; x < 144; ++x) {
-                Data8 tile = win_tilemap()[(x / 8) + (y / 8) * 32];
-                int color = GetTilePix(tile, y % 8, x % 8);
-
-                sf::RectangleShape r;
-                r.setSize(sf::Vector2f(4, 4));
-                r.setPosition(x * 4, y * 4);
-                r.setFillColor(colors[color]);
-                _window.draw(r);
+        for (int x = 0; x < 144; ++x) {
+            int y_win = y - _wy;
+            int x_win = x - _wx;
+            if (y_win < 0 || x_win < 0) {
+                continue;
             }
+            Data8 tile = win_tilemap()[(x_win / 8) + (y_win / 8) * 32];
+            int color = GetTilePix(tile, y_win % 8, x_win % 8);
+
+            sf::RectangleShape r;
+            r.setSize(sf::Vector2f(4, 4));
+            r.setPosition(x * 4, y * 4);
+            r.setFillColor(colors[color]);
+            _window.draw(r);
         }
     }
 
@@ -118,6 +133,5 @@ void Video::Render() {
             }
         }
     }
-
-    _window.display();
+#endif
 }

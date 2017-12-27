@@ -160,7 +160,18 @@ AddressBus::AddressBus(
                  _vid.set_oam(0xFE00 + i, Get((v << 8) + i).u);
              }
          }},
-        {"io_ports", 0xFF47, 0xFF7F, NotImplementedGet, NotImplementedSet},
+        {"io_ports", 0xFF47, 0xFF49, NotImplementedGet, NotImplementedSet},
+        {"win_y_pos",
+         0xFF4A,
+         0xFF4A,
+         std::bind(&Video::win_y_pos, &_vid),
+         std::bind(&Video::set_win_y_pos, &_vid, _2)},
+        {"win_x_pos",
+         0xFF4B,
+         0xFF4B,
+         std::bind(&Video::win_x_pos, &_vid),
+         std::bind(&Video::set_win_x_pos, &_vid, _2)},
+        {"io_ports", 0xFF4C, 0xFF7F, NotImplementedGet, NotImplementedSet},
         // HRAM
         {"hram",
          0xFF80,

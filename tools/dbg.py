@@ -54,6 +54,19 @@ class Step(Command):
             self.depth -= 1
         return self.depth == 0
 
+class Watch(Command):
+    def __init__(self, addrs: List[str]) -> None:
+        self.addrs = addrs
+
+    def must_stop(self, instr: Instr) -> bool:
+        if '[' not in instr.format_code:
+            return False
+        b = instr.format_code.index('[')
+        e = instr.format_code.index(']')
+        for addr in self.addrs:
+            if addr in instr.format_code[b:e]:
+                return True
+        return False
 
 class Debugger:
     def __init__(self) -> None:
@@ -113,6 +126,10 @@ class Debugger:
                 self.state = Step()
                 self.state.must_stop(cpu.instr)
                 break
+            if cmd == 'w':
+                self.state = Watch(args)
+                self.state.must_stop(cpu.instr)
+                break
             if cmd == '?':
                 print('Commands:\n'
                       '  bt:          show backtrace\n'
@@ -131,7 +148,7 @@ def run_dbg(trace_file: str) -> None:
     cpu = CPU()
     dbg = Debugger()
     for instr in cpu.execute(trace_file):
-        print(instr.addr + " " + instr.code)
+        print(instr.addr + " " + instr.format_code)
         dbg.prompt(cpu)
 
 

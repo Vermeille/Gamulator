@@ -18,35 +18,7 @@ class Function:
 
     def show(self) -> None:
         for i in self.instrs:
-            print(Addr.get_aligned(i.addr) + '  ' + self.format_code(i))
-
-    def format_code(self, i: Instr) -> str:
-        code = i.code
-        if i.code.startswith('call'):
-            instr = i.code.split()[0]
-            addr = i.code.split()[1].split('/')[0]
-            code = instr + " " + Addr.get(addr)
-        elif i.code.startswith('jp'):
-            instr = i.code.split()[0]
-            addr = i.code.split()[1].split('/')[0]
-            if addr.startswith('0x'):
-                code = instr + " " + Addr.get(addr)
-        elif i.code.startswith('jr'):
-            instr = i.code.split()[0]
-            addr = int(i.code.split()[1].split('/')[2])
-            code = instr + " " + Addr.get(hex(i.iaddr + addr + 2))
-
-        if '[' in code:
-            b = code.index('[') + 1
-            e = code.index(']')
-            if ' ' not in code[b:e] and code[b] == '0':
-                addr = code[b:e].split('/')[0]
-                code = code[:b] + Addr.get(addr) + code[e:]
-            elif '+' in code[b:e] and code[b:e].startswith('0xFF00 + 0x'):
-                addr = int(code[b + len('0xFF00 + '):e].split('/')[0], 16)
-                code = code[:b] + Addr.get(hex(0xFF00 + addr)) + code[e:]
-
-        return code
+            print(Addr.get_aligned(i.addr) + '  ' + i.format_code)
 
 
 class Program:

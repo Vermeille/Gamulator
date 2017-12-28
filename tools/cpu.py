@@ -7,6 +7,7 @@ class Instr:
         self.iaddr = int(addr, 16)
         self.code = code
         self._is_interrupt = is_interrupt
+        self.format_code = self.pretty_code(self.code)
 
     def __eq__(self, i):
         return self.iaddr == i.iaddr
@@ -29,6 +30,33 @@ class Instr:
     @property
     def is_interrupt(self) -> bool:
         return self._is_interrupt
+
+    def pretty_code(self, code: str) -> str:
+        if code.startswith('call'):
+            instr = code.split()[0]
+            addr = code.split()[1].split('/')[0]
+            code = instr + " " + Addr.get(addr)
+        elif code.startswith('jp'):
+            instr = code.split()[0]
+            addr = code.split()[1].split('/')[0]
+            if addr.startswith('0x'):
+                code = instr + " " + Addr.get(addr)
+        elif code.startswith('jr'):
+            instr = code.split()[0]
+            iaddr = int(code.split()[1].split('/')[2])
+            code = instr + " " + Addr.get(hex(self.iaddr + iaddr + 2))
+
+        if '[' in code:
+            b = code.index('[') + 1
+            e = code.index(']')
+            if ' ' not in code[b:e] and code[b] == '0':
+                addr = code[b:e].split('/')[0]
+                code = code[:b] + Addr.get(addr) + code[e:]
+            elif '+' in code[b:e] and code[b:e].startswith('0xFF00 + 0x'):
+                iaddr = int(code[b + len('0xFF00 + '):e].split('/')[0], 16)
+                code = code[:b] + Addr.get(hex(0xFF00 + iaddr)) + code[e:]
+
+        return code
 
 
 def instrs(filepath: str) -> Iterator[Instr]:

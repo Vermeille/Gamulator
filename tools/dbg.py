@@ -123,3 +123,20 @@ class Debugger:
                       '  s:           step to the next instr in the current\n'
                       '               function\n'
                       '  ?:           display this help')
+
+def run_dbg(trace_file: str) -> None:
+    call = FunCallTracker()
+    ret = RetTracker()
+
+    cpu = CPU()
+    dbg = Debugger()
+    for instr in cpu.execute(trace_file):
+        print(instr.addr + " " + instr.code)
+        dbg.prompt(cpu)
+
+
+if __name__ == '__main__':
+    if len(sys.argv) == 3:
+        Addr.init(sys.argv[2])
+
+    run_dbg(sys.argv[1])

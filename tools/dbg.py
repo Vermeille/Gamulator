@@ -1,42 +1,51 @@
+import sys
+from typing import Tuple, List
 from addr import Addr
-from cpu import CallTracker, RetTracker, RstTracker
+from cpu import CPU, CallTracker, RetTracker, RstTracker, Instr, FunCallTracker
+from abc import ABCMeta, abstractmethod
 
 
-class Continue:
-    def must_stop(self, instr):
+class Command(metaclass=ABCMeta):
+    @abstractmethod
+    def must_stop(self, instr: Instr) -> bool:
+        pass
+
+
+class Continue(Command):
+    def must_stop(self, instr: Instr) -> bool:
         return False
 
 
-class Next:
-    def must_stop(self, instr):
+class Next(Command):
+    def must_stop(self, instr: Instr) -> bool:
         return True
 
 
-class ToCall:
-    def __init__(self):
-        self.call_tracker = CallTracker('call')
+class ToCall(Command):
+    def __init__(self) -> None:
+        self.call_tracker = CallTracker()
 
-    def must_stop(self, instr):
+    def must_stop(self, instr: Instr) -> bool:
         return self.call_tracker.happened(instr)
 
 
-class ToRet:
-    def __init__(self):
+class ToRet(Command):
+    def __init__(self) -> None:
         self.ret_tracker = Step()
         self.ret_tracker.depth = 1
 
-    def must_stop(self, instr):
+    def must_stop(self, instr: Instr) -> bool:
         return self.ret_tracker.must_stop(instr)
 
 
-class Step:
-    def __init__(self):
+class Step(Command):
+    def __init__(self) -> None:
         self.ret_tracker = RetTracker()
         self.rst_tracker = RstTracker()
         self.call_tracker = CallTracker()
         self.depth = 0
 
-    def must_stop(self, instr):
+    def must_stop(self, instr: Instr) -> bool:
         if self.call_tracker.happened(instr):
             self.depth += 1
         if self.rst_tracker.happened(instr):
@@ -47,23 +56,23 @@ class Step:
 
 
 class Debugger:
-    def __init__(self):
-        self.breakpoints = []
-        self.cmd = None
-        self.args = []
-        self.state = Next()
+    def __init__(self) -> None:
+        self.breakpoints = []  # type: List[str]
+        self.cmd = ''
+        self.args = []  # type: List[str]
+        self.state = Next()  # type: Command
 
-    def readcmd(self):
-        cmd = raw_input('> ').split()
+    def readcmd(self) -> Tuple[str, List[str]]:
+        cmd_toks = input('> ').split()
 
-        if len(cmd) == 0:
+        if len(cmd_toks) == 0:
             return self.cmd, self.args
-        elif len(cmd) == 1:
-            cmd = cmd[0]
-            args = []
+        elif len(cmd_toks) == 1:
+            cmd = cmd_toks[0]
+            args = []  # type: List[str]
         else:
-            args = cmd[1:]
-            cmd = cmd[0]
+            args = cmd_toks[1:]
+            cmd = cmd_toks[0]
 
         if not cmd:
             return self.cmd, self.args
@@ -72,7 +81,7 @@ class Debugger:
         self.args = args
         return self.cmd, self.args
 
-    def prompt(self, cpu):
+    def prompt(self, cpu: CPU) -> None:
         if cpu.instr.addr in self.breakpoints:
             self.state = Next()
 

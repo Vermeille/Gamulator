@@ -9,7 +9,7 @@ from addr import Addr
 
 class Function:
     def __init__(self) -> None:
-        self.instrs = [] # type: List[Instr]
+        self.instrs = []  # type: List[Instr]
 
     def log(self, instr: Instr) -> None:
         pos = bisect.bisect_left(self.instrs, instr)
@@ -30,11 +30,11 @@ class Function:
             instr = i.code.split()[0]
             addr = i.code.split()[1].split('/')[0]
             if addr.startswith('0x'):
-                code =  instr + " " + Addr.get(addr)
+                code = instr + " " + Addr.get(addr)
         elif i.code.startswith('jr'):
             instr = i.code.split()[0]
             addr = int(i.code.split()[1].split('/')[2])
-            code =  instr + " " + Addr.get(hex(i.iaddr + addr + 2))
+            code = instr + " " + Addr.get(hex(i.iaddr + addr + 2))
 
         if '[' in code:
             b = code.index('[') + 1
@@ -51,20 +51,20 @@ class Function:
 
 class Program:
     def __init__(self, debug=False) -> None:
-        self.stack = [] # type: List[str]
-        self.funs = defaultdict(Function) # type: Dict[str, Function]
+        self.stack = []  # type: List[str]
+        self.funs = defaultdict(Function)  # type: Dict[str, Function]
         self.debug = debug
 
     def push(self, addr: str) -> None:
         self.stack.append(addr)
         if self.debug:
-            print("." * (len(f.stack) - 1) + '}')
+            print("." * (len(self.stack) - 1) + '}')
             self.inline_stack()
 
     def pop(self) -> None:
         self.stack.pop()
         if self.debug:
-            print("." * (len(f.stack) - 1) + '}')
+            print("." * (len(self.stack) - 1) + '}')
             self.inline_stack()
 
     def log(self, instr: Instr) -> None:
@@ -72,7 +72,8 @@ class Program:
             self.funs[self.stack[-1]].log(instr)
 
         if self.debug:
-            print("." * (len(f.stack) - 1) + Addr.get(instr.addr) + ':\t' + instr.code)
+            print("." * (len(self.stack) - 1) + Addr.get(instr.addr) + ':\t' +
+                  instr.code)
 
     def show(self) -> None:
         for k, v in self.funs.items():
@@ -84,28 +85,31 @@ class Program:
         print("." * (len(self.stack) - 1) + "[" + " -> ".join(self.stack))
 
 
-if len(sys.argv) == 3:
-    Addr.init(sys.argv[2])
+def reconstruct_functions(trace_file: str) -> Program:
+    call = FunCallTracker()
+    ret = RetTracker()
 
-call = FunCallTracker()
-ret = RetTracker()
+    f = Program(debug=False)
+    f.push('0x100')
+    cpu = CPU()
+    try:
+        for instr in cpu.execute(trace_file):
+            if ret.happened(instr):
+                f.pop()
 
-f = Program(debug=False)
-f.push('0x100')
-cpu = CPU()
-#dbg = Debugger()
-try:
-    for instr in cpu.execute(sys.argv[1]):
-        #dbg.prompt(cpu)
-        if ret.happened(instr):
-            f.pop()
+            if call.happened(instr):
+                f.push(instr.addr)
 
-        if call.happened(instr):
-            f.push(instr.addr)
+            f.log(instr)
 
-        f.log(instr)
+    except:
+        pass
+    finally:
+        return f
 
-except:
-    pass
-finally:
-    f.show()
+
+if __name__ == '__main__':
+    if len(sys.argv) == 3:
+        Addr.init(sys.argv[2])
+
+    reconstruct_functions(sys.argv[1]).show()

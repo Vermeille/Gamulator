@@ -148,7 +148,7 @@ def run_dbg(trace_file: str) -> None:
     cpu = CPU()
     dbg = Debugger()
     for instr in cpu.execute(trace_file):
-        print(instr.addr + " " + instr.format_code)
+        print(Addr.get_aligned(instr.addr) + "  " + instr.format_code)
         dbg.prompt(cpu)
 
 

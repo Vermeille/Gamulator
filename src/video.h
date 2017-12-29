@@ -1,5 +1,8 @@
 #pragma once
 
+#include <iomanip>
+#include <iostream>
+
 #include <stdint.h>
 #include <SFML/Graphics.hpp>
 #include <array>
@@ -50,7 +53,8 @@ class LCDCtrl {
 
 class LCDStatus {
    public:
-    void Set(byte v) { _state = v; }
+    LCDStatus() : _state(0) {}
+    void Set(byte v) { _state = (v & ~0b111) | (_state & 0b111); }
     byte Get() const { return _state; }
 
     void set_lyc_interrupt(bool b) { SetStateBit(6, b); }
@@ -90,21 +94,27 @@ class LCDStatus {
 
 class Video {
    public:
-    Video() : _window(sf::VideoMode(160 * 4, 144 * 4), "Gameboy") {
-        _disp.create(160 * 4, 144 * 4);
+    Video() : _clock(0), _window(sf::VideoMode(160 * 4, 144 * 4), "Gameboy") {
         _vram.fill(uint8_t(0));
         _oam.fill(uint8_t(0));
-        _window.setFramerateLimit(2);
+        _window.setFramerateLimit(60);
     }
 
-    void set_lcdc(byte b) { _ctrl.Set(b); }
+    void set_lcdc(byte b) {
+        cevent << "LCDC: " << std::hex << int(b) << "\n";
+        _ctrl.Set(b);
+    }
     byte lcdc() const { return _ctrl.Get(); }
 
     void set_lcd_status(byte v) { _state.Set(v); }
     byte lcd_status() const { return _state.Get(); }
 
     byte y_coord() const { return _line; }
-    void reset_y_coord() { _line = 0; }
+    void reset_y_coord() {
+        _line = 0;
+        _state.set_mode(LCDStatus::SEARCH_OAM);
+        _clock = 0;
+    }
 
     byte vram(uint16_t idx) const { return _vram[idx - 0x8000u].u; }
     void set_vram(uint16_t idx, byte val) { _vram[idx - 0x8000u].u = val; }
@@ -150,7 +160,6 @@ class Video {
         } else {
             addr = 0x9000 + tile.s * 16 + y * 2;
         }
-        cdebug << addr << "\n";
 
         int8_t l = (_vram[addr - 0x8000].u >> (7 - x)) & 1;
         int8_t h = (_vram[addr + 1 - 0x8000].u >> (7 - x)) & 1;
@@ -175,5 +184,4 @@ class Video {
     byte _vblank_int;
     byte _hblank_int;
     sf::RenderWindow _window;
-    sf::RenderTexture _disp;
 };

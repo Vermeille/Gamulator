@@ -59,14 +59,8 @@ void Video::NewFrame() {
         if (event.type == sf::Event::Closed) _window.close();
     }
 
-    _disp.display();
-    auto persistence = sf::Sprite(_disp.getTexture());
-    _window.draw(persistence);
     _window.display();
     _window.clear(sf::Color::Blue);
-    _disp.clear(sf::Color::Red);
-    _disp.draw(persistence);
-    std::cerr << "NEW\n";
 }
 
 void Video::Render(int line) {
@@ -76,7 +70,7 @@ void Video::Render(int line) {
                                      sf::Color(0, 0, 0)};
 
     const int y = line;
-    std::cerr << y << " " << _ctrl.bg_display() << "\n";
+    cdebug << "Y COORD: " << y << " " << _ctrl.bg_display() << "\n";
     assert(y < 145);
     if (_ctrl.bg_display()) {
         for (int x = 0; x < 160; ++x) {
@@ -87,11 +81,11 @@ void Video::Render(int line) {
             r.setSize(sf::Vector2f(4, 4));
             r.setPosition(x * 4, y * 4);
             r.setFillColor(colors[color]);
-            _disp.draw(r);
+            _window.draw(r);
         }
     }
 
-#if 0
+#if 1
     if (_ctrl.win_display_enable()) {
         for (int x = 0; x < 144; ++x) {
             int y_win = y - _wy;

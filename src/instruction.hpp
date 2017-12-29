@@ -1321,7 +1321,6 @@ using RST60 = RST_Impl<0x60, false, A, B>;
 
 template <class, class>
 struct RETI {
-    static const int cycles = 16;
     static inline int Do(Z80* p) {
         p->set_interrupts(0xFF);
         RET<void, void>::Do(p);

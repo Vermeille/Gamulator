@@ -447,6 +447,7 @@ Z80::Z80(AddressBus& addr, Video& v, LinkCable& lk, Timer& timer)
     RegisterCBOpcode<0x7E, Instr<BIT, I<7>, ToAddr<Register<HL>>>>();
     RegisterCBOpcode<0x7F, Instr<BIT, I<7>, Register<A>>>();
 
+    RegisterCBOpcode<0x86, Instr<RES, I<0>, ToAddr<Register<HL>>>>();
     RegisterCBOpcode<0x87, Instr<RES, I<0>, Register<A>>>();
 
     RegisterCBOpcode<0x9E, Instr<RES, I<3>, ToAddr<Register<HL>>>>();

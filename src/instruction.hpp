@@ -1260,11 +1260,11 @@ struct HALT {
 template <uint16_t Addr, bool HasOpcode, class, class>
 struct RST_Impl {
     static int Do(Z80* p) {
-        p->set_interrupts(0x00);
         if (HasOpcode) {
             p->next_opcode();
         } else {
             cinstr << "INT 0x" << std::hex << Addr << std::endl;
+            p->set_interrupts(0x00);
             p->next_opcode();
         }
         Data16 sp = Z80::Register<Z80::SP>::GetW(p);

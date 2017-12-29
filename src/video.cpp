@@ -56,9 +56,16 @@ void Video::NewFrame() {
     sf::Event event;
     while (_window.pollEvent(event)) {
         // Request for closing the window
-        if (event.type == sf::Event::Closed) _window.close();
+        if (event.type == sf::Event::Closed) {
+            _window.close();
+        }
     }
 
+    _texture.update(_pixels.get());
+    sf::Sprite sp;
+    sp.setScale(4, 4);
+    sp.setTexture(_texture);
+    _window.draw(sp);
     _window.display();
     _window.clear(sf::Color::Blue);
 }
@@ -73,21 +80,19 @@ void Video::Render(int line) {
     cdebug << "Y COORD: " << y << " " << _ctrl.bg_display() << "\n";
     assert(y < 145);
     if (_ctrl.bg_display()) {
+        auto pixs = reinterpret_cast<sf::Color*>(&_pixels[line * 160 * 4]);
         for (int x = 0; x < 160; ++x) {
             Data8 tile = bg_tilemap()[(x / 8) + (y / 8) * 32];
             int color = GetTilePix(tile, y % 8, x % 8);
 
-            sf::RectangleShape r;
-            r.setSize(sf::Vector2f(4, 4));
-            r.setPosition(x * 4, y * 4);
-            r.setFillColor(colors[color]);
-            _window.draw(r);
+            pixs[x] = colors[color];
         }
     }
 
 #if 1
     if (_ctrl.win_display_enable()) {
-        for (int x = 0; x < 144; ++x) {
+        auto pixs = reinterpret_cast<sf::Color*>(&_pixels[line * 160 * 4]);
+        for (int x = 0; x < 160; ++x) {
             int y_win = y - _wy;
             int x_win = x - _wx;
             if (y_win < 0 || x_win < 0) {
@@ -96,14 +101,11 @@ void Video::Render(int line) {
             Data8 tile = win_tilemap()[(x_win / 8) + (y_win / 8) * 32];
             int color = GetTilePix(tile, y_win % 8, x_win % 8);
 
-            sf::RectangleShape r;
-            r.setSize(sf::Vector2f(4, 4));
-            r.setPosition(x * 4, y * 4);
-            r.setFillColor(colors[color]);
-            _window.draw(r);
+            pixs[x] = colors[color];
         }
     }
 
+    auto pixs = reinterpret_cast<sf::Color*>(&_pixels[0]);
     for (uint32_t i = 0; i < 40; ++i) {
         auto addr = i * 4;
         byte x_pos = _oam[addr].u;
@@ -119,11 +121,7 @@ void Video::Render(int line) {
                     continue;
                 }
 
-                sf::RectangleShape r;
-                r.setSize(sf::Vector2f(4, 4));
-                r.setPosition(x * 4 + x_pos * 4, y * 4 + y_pos * 4);
-                r.setFillColor(colors[color]);
-                _window.draw(r);
+                pixs[(y + y_pos) * 160 + x + x_pos] = colors[color];
             }
         }
     }

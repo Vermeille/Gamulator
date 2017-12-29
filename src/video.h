@@ -95,9 +95,11 @@ class LCDStatus {
 class Video {
    public:
     Video() : _clock(0), _window(sf::VideoMode(160 * 4, 144 * 4), "Gameboy") {
+        _pixels.reset(new sf::Uint8[160 * 144 * 4]);
+        _texture.create(160, 144);
         _vram.fill(uint8_t(0));
         _oam.fill(uint8_t(0));
-        _window.setFramerateLimit(60);
+        _window.setFramerateLimit(0);
     }
 
     void set_lcdc(byte b) {
@@ -184,4 +186,6 @@ class Video {
     byte _vblank_int;
     byte _hblank_int;
     sf::RenderWindow _window;
+    sf::Texture _texture;
+    std::unique_ptr<sf::Uint8[]> _pixels;
 };

@@ -99,7 +99,7 @@ class Video {
         _texture.create(160, 144);
         _vram.fill(uint8_t(0));
         _oam.fill(uint8_t(0));
-        _window.setFramerateLimit(0);
+        _window.setFramerateLimit(60);
     }
 
     void set_lcdc(byte b) {

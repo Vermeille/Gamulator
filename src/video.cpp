@@ -33,7 +33,7 @@ void Video::Clock() {
         _clock = 0;
         Render(_line);
         ++_line;
-        if (_line == 145) {
+        if (_line == 144) {
             _state.set_mode(LCDStatus::VBLANK);
             _vblank_int = 1;
             cevent << "vBLANK INT\n";
@@ -58,6 +58,7 @@ void Video::NewFrame() {
         // Request for closing the window
         if (event.type == sf::Event::Closed) {
             _window.close();
+            exit(0);
         }
     }
 
@@ -78,7 +79,8 @@ void Video::Render(int line) {
 
     const int y = line;
     cdebug << "Y COORD: " << y << " " << _ctrl.bg_display() << "\n";
-    assert(y < 145);
+    assert(y < 144);
+#if 1
     if (_ctrl.bg_display()) {
         auto pixs = reinterpret_cast<sf::Color*>(&_pixels[line * 160 * 4]);
         for (int x = 0; x < 160; ++x) {
@@ -89,7 +91,6 @@ void Video::Render(int line) {
         }
     }
 
-#if 1
     if (_ctrl.win_display_enable()) {
         auto pixs = reinterpret_cast<sf::Color*>(&_pixels[line * 160 * 4]);
         for (int x = 0; x < 160; ++x) {
@@ -122,9 +123,15 @@ void Video::Render(int line) {
                     continue;
                 }
 
+                if (y + y_pos < 0 || y + y_pos >= 144) {
+                    continue;
+                }
+
+                if (x + x_pos < 0 || x + x_pos >= 160) {
+                    continue;
+                }
                 pixs[(y + y_pos) * 160 + x + x_pos] = colors[color];
             }
         }
     }
-#endif
 }

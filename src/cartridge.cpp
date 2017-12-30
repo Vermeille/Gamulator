@@ -66,7 +66,7 @@ class MBC1 : public Cartridge::Controller {
                      [&](uint16_t idx) { return ReadRom(idx); },
                      [&](uint16_t, byte b) {
                          b = b & 0b1'1111;
-                         b = b == 0 ? 1 : b;
+                         b = (b == 0) ? 1 : b;
                          _rom_nbr = (_rom_nbr & ~0b1'1111) | b;
                      }},
                     {"rom_bank_switchable",

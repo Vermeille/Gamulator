@@ -14,7 +14,6 @@ class Keypad {
     }
 
     byte joyp() const {
-        assert(_dir_keys ^ _buttons_keys);
         if (_dir_keys) {
             return ~(~0x1f |
                      (sf::Keyboard::isKeyPressed(sf::Keyboard::Down) << 3) |

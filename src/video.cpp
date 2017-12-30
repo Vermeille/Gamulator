@@ -105,11 +105,12 @@ void Video::Render(int line) {
         }
     }
 
+#endif
     auto pixs = reinterpret_cast<sf::Color*>(&_pixels[0]);
     for (uint32_t i = 0; i < 40; ++i) {
         auto addr = i * 4;
-        byte x_pos = _oam[addr].u;
-        byte y_pos = _oam[addr + 1].u;
+        byte y_pos = _oam[addr].u - 16;
+        byte x_pos = _oam[addr + 1].u - 8;
         Data8 tile = _oam[addr + 2];
         byte flags = _oam[addr + 3].u;
 

@@ -156,7 +156,9 @@ void Video::Render(int line) {
                 if (x + x_pos < 0 || x + x_pos >= 160) {
                     continue;
                 }
-                pixs[(y + y_pos) * 160 + x + x_pos] = kColors[color];
+                pixs[(y + y_pos) * 160 + x + x_pos] =
+                    (flags & (1 << 4)) ? _obj1_palette.GetColor(color)
+                                       : _obj0_palette.GetColor(color);
             }
         }
     }

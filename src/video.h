@@ -170,6 +170,12 @@ class Video {
     byte bg_palette() const { return _bg_palette.Get(); }
     void set_bg_palette(byte x) { _bg_palette.Set(x); }
 
+    byte obj0_palette() const { return _obj0_palette.Get(); }
+    void set_obj0_palette(byte x) { _obj0_palette.Set(x); }
+
+    byte obj1_palette() const { return _obj1_palette.Get(); }
+    void set_obj1_palette(byte x) { _obj1_palette.Set(x); }
+
     void Clock();
 
    private:
@@ -220,6 +226,8 @@ class Video {
     byte _wy;
     byte _wx;
     Palette _bg_palette;
+    Palette _obj0_palette;
+    Palette _obj1_palette;
 
     byte _vblank_int;
     byte _hblank_int;

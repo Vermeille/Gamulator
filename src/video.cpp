@@ -100,47 +100,6 @@ void Video::RenderWindow(int line) {
     }
 }
 
-void Video::RenderSprites(int line) {
-    auto pixs = reinterpret_cast<sf::Color*>(&_pixels[0]);
-    const int height = _ctrl.sprite_size() ? 16 : 8;
-    const int y = line;
-    for (uint32_t i = 0; i < 40; ++i) {
-        auto addr = i * 4;
-        int y_pos = _oam[addr].u - 16;
-        int x_pos = _oam[addr + 1].u - 8;
-        Data8 tile = _oam[addr + 2];
-        byte flags = _oam[addr + 3].u;
-
-        for (int y = 0; y < height; ++y) {
-            if (y + y_pos != line) {
-                continue;
-            }
-
-            for (int x = 0; x < 8; ++x) {
-                int color =
-                    GetSpritePix(tile,
-                                 (flags & (1 << 6)) ? height - 1 - y : y,
-                                 (flags & (1 << 5)) ? 7 - x : x);
-
-                if (color == 0) {
-                    continue;
-                }
-
-                if (y + y_pos < 0 || y + y_pos >= 144) {
-                    continue;
-                }
-
-                if (x + x_pos < 0 || x + x_pos >= 160) {
-                    continue;
-                }
-                pixs[(y + y_pos) * 160 + x + x_pos] =
-                    (flags & (1 << 4)) ? _obj1_palette.GetColor(color)
-                                       : _obj0_palette.GetColor(color);
-            }
-        }
-    }
-}
-
 void Video::Render(int line) {
     const int y = line;
     cdebug << "Y COORD: " << y << " " << _ctrl.bg_display() << "\n";
@@ -153,5 +112,5 @@ void Video::Render(int line) {
         RenderWindow(line);
     }
 
-    RenderSprites(line);
+    _sprites.Render(line);
 }

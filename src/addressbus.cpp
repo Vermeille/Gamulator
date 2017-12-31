@@ -128,7 +128,7 @@ AddressBus::AddressBus(
         {"lcdc",
          0xFF40,
          0xFF40,
-         std::bind(&Video::lcdc, &_vid),
+         [&](uint16_t) { return _vid.lcdc().Get(); },
          std::bind(&Video::set_lcdc, &_vid, _2)},
         {"lcd_status",
          0xFF41,

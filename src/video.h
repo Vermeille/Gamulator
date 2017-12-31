@@ -11,15 +11,19 @@
 #include "lcdstatus.h"
 #include "palette.h"
 #include "palette.h"
+#include "spritestable.h"
 #include "utils.h"
 
 class Video {
    public:
-    Video() : _clock(0), _window(sf::VideoMode(160 * 4, 144 * 4), "Gameboy") {
-        _pixels.reset(new sf::Uint8[160 * 144 * 4]);
+    Video()
+        : _pixels(new sf::Uint8[160 * 144 * 4]),
+          _sprites(_pixels.get(), *this),
+          _clock(0),
+          _window(sf::VideoMode(160 * 4, 144 * 4), "Gameboy") {
         _texture.create(160, 144);
-        _vram.fill(uint8_t(0));
         _oam.fill(uint8_t(0));
+        _vram.fill(uint8_t(0));
         _window.setFramerateLimit(60);
     }
 
@@ -27,7 +31,7 @@ class Video {
         cevent << "LCDC: " << std::hex << int(b) << "\n";
         _ctrl.Set(b);
     }
-    byte lcdc() const { return _ctrl.Get(); }
+    LCDCtrl lcdc() const { return _ctrl; }
 
     void set_lcd_status(byte v) { _state.Set(v); }
     byte lcd_status() const { return _state.Get(); }
@@ -53,6 +57,7 @@ class Video {
 
     byte oam(uint16_t idx) const { return _oam[idx - 0xFE00u].u; }
     void set_oam(uint16_t idx, byte v) { _oam[idx - 0xFE00u].u = v; }
+    const Data8* oam_ptr() const { return &_oam[0]; }
 
     byte win_y_pos() const { return _wy; }
     void set_win_y_pos(byte x) { _wy = x; }
@@ -69,11 +74,11 @@ class Video {
     byte bg_palette() const { return _bg_palette.Get(); }
     void set_bg_palette(byte x) { _bg_palette.Set(x); }
 
-    byte obj0_palette() const { return _obj0_palette.Get(); }
-    void set_obj0_palette(byte x) { _obj0_palette.Set(x); }
+    byte obj0_palette() const { return _sprites.obj0_palette(); }
+    void set_obj0_palette(byte x) { _sprites.set_obj0_palette(x); }
 
-    byte obj1_palette() const { return _obj1_palette.Get(); }
-    void set_obj1_palette(byte x) { _obj1_palette.Set(x); }
+    byte obj1_palette() const { return _sprites.obj1_palette(); }
+    void set_obj1_palette(byte x) { _sprites.set_obj1_palette(x); }
 
     void Clock();
 
@@ -98,23 +103,13 @@ class Video {
         return (h << 1) | l;
     }
 
-    int8_t GetSpritePix(Data8 tile, int32_t y, int32_t x) {
-        if (_ctrl.sprite_size()) {
-            tile.u = tile.u & ~1;
-        }
-        uint32_t addr = 0x8000 + tile.u * 16 + y * 2;
-
-        int8_t l = (_vram[addr - 0x8000].u >> (7 - x)) & 1;
-        int8_t h = (_vram[addr + 1 - 0x8000].u >> (7 - x)) & 1;
-        return (h << 1) | l;
-    }
     void NewFrame();
     void Render(int line);
 
     void RenderBg(int line);
     void RenderWindow(int line);
-    void RenderSprites(int line);
 
+    std::unique_ptr<sf::Uint8[]> _pixels;
     int32_t _clock = 0;
     int32_t _line = 0;
     int32_t _ly_comp;
@@ -127,12 +122,10 @@ class Video {
     byte _wy;
     byte _wx;
     Palette _bg_palette;
-    Palette _obj0_palette;
-    Palette _obj1_palette;
+    SpritesTable _sprites;
 
     byte _vblank_int;
     byte _hblank_int;
     sf::RenderWindow _window;
     sf::Texture _texture;
-    std::unique_ptr<sf::Uint8[]> _pixels;
 };

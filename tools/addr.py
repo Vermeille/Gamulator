@@ -43,6 +43,36 @@ class Addr:
 
     @classmethod
     def init(cls, path: str):
+        io_ports = [
+            ('0xff00', 'joyp'),
+            ('0xff01', 'serial_transfer'),
+            ('0xff02', 'serial_ctrl'),
+            ('0xff04', 'timer_divider'),
+            ('0xff05', 'timer_counter'),
+            ('0xff06', 'timer_modulo'),
+            ('0xff07', 'timer_control'),
+            ('0xff03', 'io_ports'),
+            ('0xff0f', 'int_flag'),
+            ('0xff10', 'io_ports'),
+            ('0xff25', 'snd_out_term_select'),
+            ('0xff40', 'lcdc'),
+            ('0xff41', 'lcd_status'),
+            ('0xff42', 'scroll_y'),
+            ('0xff43', 'scroll_x'),
+            ('0xff44', 'y_coord'),
+            ('0xff45', 'ly_compare'),
+            ('0xff46', 'dma'),
+            ('0xff47', 'bg_palette_data'),
+            ('0xff48', 'obj_palette0_data'),
+            ('0xff49', 'obj_palette1_data'),
+            ('0xff4a', 'win_y_pos'),
+            ('0xff4b', 'win_x_pos'),
+            ('0xffff', 'interrupt_master'),
+        ]
+        for a, s in io_ports:
+            m = MemSym(a, a, s)
+            bisect.insort(cls.symbols, m)
+
         with open(path) as f:
             for l in f.readlines():
                 if not l:

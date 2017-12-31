@@ -100,15 +100,6 @@ void Video::Render(int line) {
     if (_ctrl.bg_display()) {
         RenderBg(y);
     }
-    if (false && _ctrl.bg_display()) {
-        auto pixs = reinterpret_cast<sf::Color*>(&_pixels[line * 160 * 4]);
-        for (int x = 0; x < 160; ++x) {
-            Data8 tile = bg_tilemap()[(x / 8) + (y / 8) * 32];
-            int color = GetTilePix(tile, y % 8, x % 8);
-
-            pixs[x] = kColors[color];
-        }
-    }
 
     if (_ctrl.win_display_enable()) {
         auto pixs = reinterpret_cast<sf::Color*>(&_pixels[line * 160 * 4]);
@@ -121,7 +112,7 @@ void Video::Render(int line) {
             Data8 tile = win_tilemap()[(x_win / 8) + (y_win / 8) * 32];
             int color = GetTilePix(tile, y_win % 8, x_win % 8);
 
-            pixs[x] = kColors[color];
+            pixs[x] = _bg_palette.GetColor(color);
         }
     }
 

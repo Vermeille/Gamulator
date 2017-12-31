@@ -164,7 +164,12 @@ AddressBus::AddressBus(
                  _vid.set_oam(0xFE00 + i, Get((v << 8) + i).u);
              }
          }},
-        {"io_ports", 0xFF47, 0xFF49, NotImplementedGet, NotImplementedSet},
+        {"bg_palette",
+         0xFF47,
+         0xFF47,
+         std::bind(&Video::bg_palette, &_vid),
+         std::bind(&Video::set_bg_palette, &_vid, _2)},
+        {"io_ports", 0xFF48, 0xFF49, NotImplementedGet, NotImplementedSet},
         {"win_y_pos",
          0xFF4A,
          0xFF4A,

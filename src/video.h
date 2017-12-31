@@ -92,6 +92,28 @@ class LCDStatus {
     byte _state;
 };
 
+class Palette {
+   public:
+    Palette() : _colors{0, 1, 2, 3} {}
+    byte Get() const {
+        return _colors[0] | (_colors[1] << 2) | (_colors[2] << 4) |
+               (_colors[3] << 6);
+    }
+
+    void Set(byte b) {
+        _colors[0] = b & 0b11;
+        _colors[1] = (b >> 2) & 0b11;
+        _colors[2] = (b >> 4) & 0b11;
+        _colors[3] = (b >> 6) & 0b11;
+    }
+
+    sf::Color GetColor(int idx) const { return kColors[_colors[idx]]; }
+
+   private:
+    byte _colors[4];
+    static const sf::Color kColors[];
+};
+
 class Video {
    public:
     Video() : _clock(0), _window(sf::VideoMode(160 * 4, 144 * 4), "Gameboy") {
@@ -145,6 +167,9 @@ class Video {
                (_hblank_int & _state.hblank());
     }
 
+    byte bg_palette() const { return _bg_palette.Get(); }
+    void set_bg_palette(byte x) { _bg_palette.Set(x); }
+
     void Clock();
 
    private:
@@ -184,6 +209,7 @@ class Video {
     byte _scroll_y;
     byte _wy;
     byte _wx;
+    Palette _bg_palette;
 
     byte _vblank_int;
     byte _hblank_int;

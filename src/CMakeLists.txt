@@ -11,6 +11,11 @@ add_executable(emu
     video.h
     z80.cpp
     z80.h
-    utils.h)
+    utils.h
+    lcdc.h
+    lcdstatus.h
+    palette.cpp
+    palette.h
+    )
 
 target_link_libraries(emu sfml-window sfml-system sfml-graphics)

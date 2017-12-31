@@ -7,112 +7,11 @@
 #include <SFML/Graphics.hpp>
 #include <array>
 
+#include "lcdc.h"
+#include "lcdstatus.h"
+#include "palette.h"
+#include "palette.h"
 #include "utils.h"
-
-class LCDCtrl {
-   public:
-    void Set(byte v) { _ctrl = v; }
-    byte Get() const { return _ctrl; }
-
-    void set_lcd_display_enable(bool d) { SetCtrlBit(7, d); }
-    bool lcd_display_enable() const { return GetCtrlBit(7); }
-
-    void set_win_tile_map(int mode) { SetCtrlBit(6, mode); }
-    int win_tile_map() const { return GetCtrlBit(6); }
-
-    void set_win_display_enable(bool b) { SetCtrlBit(5, b); }
-    bool win_display_enable() const { return GetCtrlBit(5); }
-
-    void set_tile_data_mode(bool b) { SetCtrlBit(4, b); }
-    bool tile_data_mode() const { return GetCtrlBit(4); }
-
-    void set_bg_tile_map_mode(bool b) { SetCtrlBit(3, b); }
-    bool bg_tile_map_mode() const { return GetCtrlBit(3); }
-
-    void set_sprite_size(int mode) { SetCtrlBit(2, mode); }
-    bool sprite_size() const { return GetCtrlBit(2); }
-
-    void set_sprite_display_enable(bool b) { SetCtrlBit(1, b); }
-    bool sprite_display_enable() const { return GetCtrlBit(1); }
-
-    void set_bg_display(bool b) { SetCtrlBit(0, b); }
-    bool bg_display() const { return GetCtrlBit(0); }
-
-   private:
-    void SetCtrlBit(int b, bool val) {
-        if (val)
-            _ctrl |= (1 << b);
-        else
-            _ctrl &= ~(1 << b);
-    }
-
-    bool GetCtrlBit(int b) const { return _ctrl & (1 << b); }
-
-    byte _ctrl;
-};
-
-class LCDStatus {
-   public:
-    LCDStatus() : _state(0) {}
-    void Set(byte v) { _state = (v & ~0b111) | (_state & 0b111); }
-    byte Get() const { return _state; }
-
-    void set_lyc_interrupt(bool b) { SetStateBit(6, b); }
-    bool lyc_interrupt() const { return GetStateBit(6); }
-
-    void set_oam_interrupt(bool b) { SetStateBit(5, b); }
-    bool oam_interrupt() const { return GetStateBit(5); }
-
-    void set_vblank(bool b) {
-        std::cout << "vblank interrupt " << b << std::endl;
-        SetStateBit(4, b);
-    }
-    bool vblank() const { return GetStateBit(4); }
-
-    void set_hblank(bool b) { SetStateBit(3, b); }
-    bool hblank() const { return GetStateBit(3); }
-
-    bool coincidence() const { return GetStateBit(2); }
-
-    enum Mode { HBLANK = 0, VBLANK = 1, SEARCH_OAM = 2, TRANSFER = 3 };
-
-    void set_mode(Mode mode) { _state = (_state & ~0b11) | mode; }
-    Mode mode() const { return Mode(_state % 4); }
-
-   private:
-    void SetStateBit(int b, bool val) {
-        if (val)
-            _state |= (1 << b);
-        else
-            _state &= ~(1 << b);
-    }
-
-    bool GetStateBit(int b) const { return _state & (1 << b); }
-
-    byte _state;
-};
-
-class Palette {
-   public:
-    Palette() : _colors{0, 1, 2, 3} {}
-    byte Get() const {
-        return _colors[0] | (_colors[1] << 2) | (_colors[2] << 4) |
-               (_colors[3] << 6);
-    }
-
-    void Set(byte b) {
-        _colors[0] = b & 0b11;
-        _colors[1] = (b >> 2) & 0b11;
-        _colors[2] = (b >> 4) & 0b11;
-        _colors[3] = (b >> 6) & 0b11;
-    }
-
-    sf::Color GetColor(int idx) const { return kColors[_colors[idx]]; }
-
-   private:
-    byte _colors[4];
-    static const sf::Color kColors[];
-};
 
 class Video {
    public:

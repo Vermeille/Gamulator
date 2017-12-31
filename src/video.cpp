@@ -140,7 +140,10 @@ void Video::Render(int line) {
             }
 
             for (int x = 0; x < 8; ++x) {
-                int color = GetTilePix(tile, y, x);
+                int color =
+                    GetSpritePix(tile,
+                                 (flags & (1 << 6)) ? height - 1 - y : y,
+                                 (flags & (1 << 5)) ? 7 - x : x);
 
                 if (color == 0) {
                     continue;

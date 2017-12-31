@@ -213,6 +213,8 @@ class Video {
     void Render(int line);
 
     void RenderBg(int line);
+    void RenderWindow(int line);
+    void RenderSprites(int line);
 
     int32_t _clock = 0;
     int32_t _line = 0;

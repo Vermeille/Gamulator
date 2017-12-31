@@ -93,31 +93,26 @@ void Video::RenderBg(int line) {
     }
 }
 
-void Video::Render(int line) {
+void Video::RenderWindow(int line) {
     const int y = line;
-    cdebug << "Y COORD: " << y << " " << _ctrl.bg_display() << "\n";
-    assert(y < 144);
-    if (_ctrl.bg_display()) {
-        RenderBg(y);
-    }
-
-    if (_ctrl.win_display_enable()) {
-        auto pixs = reinterpret_cast<sf::Color*>(&_pixels[line * 160 * 4]);
-        for (int x = 0; x < 160; ++x) {
-            int y_win = y - _wy;
-            int x_win = x - _wx;
-            if (y_win < 0 || x_win < 0) {
-                continue;
-            }
-            Data8 tile = win_tilemap()[(x_win / 8) + (y_win / 8) * 32];
-            int color = GetTilePix(tile, y_win % 8, x_win % 8);
-
-            pixs[x] = _bg_palette.GetColor(color);
+    auto pixs = reinterpret_cast<sf::Color*>(&_pixels[line * 160 * 4]);
+    for (int x = 0; x < 160; ++x) {
+        int y_win = y - _wy;
+        int x_win = x - _wx;
+        if (y_win < 0 || x_win < 0) {
+            continue;
         }
-    }
+        Data8 tile = win_tilemap()[(x_win / 8) + (y_win / 8) * 32];
+        int color = GetTilePix(tile, y_win % 8, x_win % 8);
 
+        pixs[x] = _bg_palette.GetColor(color);
+    }
+}
+
+void Video::RenderSprites(int line) {
     auto pixs = reinterpret_cast<sf::Color*>(&_pixels[0]);
     const int height = _ctrl.sprite_size() ? 16 : 8;
+    const int y = line;
     for (uint32_t i = 0; i < 40; ++i) {
         auto addr = i * 4;
         int y_pos = _oam[addr].u - 16;
@@ -153,4 +148,19 @@ void Video::Render(int line) {
             }
         }
     }
+}
+
+void Video::Render(int line) {
+    const int y = line;
+    cdebug << "Y COORD: " << y << " " << _ctrl.bg_display() << "\n";
+    assert(y < 144);
+    if (_ctrl.bg_display()) {
+        RenderBg(y);
+    }
+
+    if (_ctrl.win_display_enable()) {
+        RenderWindow(line);
+    }
+
+    RenderSprites(line);
 }

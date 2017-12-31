@@ -120,8 +120,8 @@ void Video::Render(int line) {
     const int height = _ctrl.sprite_size() ? 16 : 8;
     for (uint32_t i = 0; i < 40; ++i) {
         auto addr = i * 4;
-        byte y_pos = _oam[addr].u - 16;
-        byte x_pos = _oam[addr + 1].u - 8;
+        int y_pos = _oam[addr].u - 16;
+        int x_pos = _oam[addr + 1].u - 8;
         Data8 tile = _oam[addr + 2];
         byte flags = _oam[addr + 3].u;
 

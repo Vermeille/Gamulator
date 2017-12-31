@@ -171,6 +171,8 @@ class Video {
     void NewFrame();
     void Render(int line);
 
+    void RenderBg(int line);
+
     int32_t _clock = 0;
     int32_t _line = 0;
     int32_t _ly_comp;

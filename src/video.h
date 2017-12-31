@@ -193,6 +193,16 @@ class Video {
         return (h << 1) | l;
     }
 
+    int8_t GetSpritePix(Data8 tile, int32_t y, int32_t x) {
+        if (_ctrl.sprite_size()) {
+            tile.u = tile.u & ~1;
+        }
+        uint32_t addr = 0x8000 + tile.u * 16 + y * 2;
+
+        int8_t l = (_vram[addr - 0x8000].u >> (7 - x)) & 1;
+        int8_t h = (_vram[addr + 1 - 0x8000].u >> (7 - x)) & 1;
+        return (h << 1) | l;
+    }
     void NewFrame();
     void Render(int line);
 

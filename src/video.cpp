@@ -126,6 +126,7 @@ void Video::Render(int line) {
     }
 
     auto pixs = reinterpret_cast<sf::Color*>(&_pixels[0]);
+    const int height = _ctrl.sprite_size() ? 16 : 8;
     for (uint32_t i = 0; i < 40; ++i) {
         auto addr = i * 4;
         byte y_pos = _oam[addr].u - 16;
@@ -133,7 +134,11 @@ void Video::Render(int line) {
         Data8 tile = _oam[addr + 2];
         byte flags = _oam[addr + 3].u;
 
-        for (int y = 0; y < 8; ++y) {
+        for (int y = 0; y < height; ++y) {
+            if (y + y_pos != line) {
+                continue;
+            }
+
             for (int x = 0; x < 8; ++x) {
                 int color = GetTilePix(tile, y, x);
 

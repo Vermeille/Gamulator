@@ -53,55 +53,55 @@ class MBC1 : public Cartridge::Controller {
    public:
     MBC1(std::vector<byte>&& data)
         : Cartridge::Controller(std::move(data)), _rom_nbr(1) {
-        _mem_map = {{"rom_bank_0",
-                     0x0000,
-                     0x1FFF,
-                     [&](uint16_t idx) { return ReadRom(idx); },
-                     [&](uint16_t, byte) {
-                         // enable RAM aka do nothing
-                     }},
-                    {"rom_bank_0",
-                     0x2000,
-                     0x3FFF,
-                     [&](uint16_t idx) { return ReadRom(idx); },
-                     [&](uint16_t, byte b) {
-                         b = b & 0b1'1111;
-                         b = (b == 0) ? 1 : b;
-                         _rom_nbr = (_rom_nbr & ~0b1'1111) | b;
-                     }},
-                    {"rom_bank_switchable",
-                     0x4000,
-                     0x5FFF,
-                     [&](uint16_t idx) {
-                         return ReadRom(idx - 0x4000 + _rom_nbr * 0x4000);
-                     },
-                     [&](uint16_t, byte b) {
-                         if (_selector == Rom) {
-                             _rom_nbr =
-                                 (_rom_nbr & ~(0b11 << 5)) | ((b & 0b11) << 5);
-                         } else {
-                             _ram_nbr = b & 0b11;
-                         }
-                     }},
-                    {"rom_bank_switchable",
-                     0x6000,
-                     0x7FFF,
-                     [&](uint16_t idx) {
-                         return ReadRom(idx - 0x4000 + _rom_nbr * 0x4000);
-                     },
-                     [&](uint16_t, byte b) { _selector = RamRomSelector(b); }},
-                    {
-                        "cartridge_ram",
-                        0xA000,
-                        0xBFFF,
-                        [&](uint16_t idx) {
-                            return _ram[(idx - 0xA000) + _ram_nbr * 0x2000];
-                        },
-                        [&](uint16_t idx, byte b) {
-                            _ram[(idx - 0xA000) + _ram_nbr * 0x2000] = b;
-                        },
+        _mem_map = {
+            {"rom_bank_0",
+             0x0000,
+             0x1FFF,
+             [&](uint16_t idx) { return ReadRom(idx); },
+             [&](uint16_t, byte) {
+                 // enable RAM aka do nothing
+             }},
+            {"rom_bank_0/low_bits",
+             0x2000,
+             0x3FFF,
+             [&](uint16_t idx) { return ReadRom(idx); },
+             [&](uint16_t, byte b) {
+                 b = b & 0b1'1111;
+                 b = (b == 0) ? 1 : b;
+                 _rom_nbr = (_rom_nbr & ~0b1'1111) | b;
+             }},
+            {"rom_bank_switchable/high_bits",
+             0x4000,
+             0x5FFF,
+             [&](uint16_t idx) {
+                 return ReadRom(idx - 0x4000 + _rom_nbr * 0x4000);
+             },
+             [&](uint16_t, byte b) {
+                 if (_selector == Rom) {
+                     _rom_nbr = (_rom_nbr & ~(0b11 << 5)) | ((b & 0b11) << 5);
+                 } else {
+                     _ram_nbr = b & 0b11;
+                 }
+             }},
+            {"rom_bank_switchable/ram_rom_select",
+             0x6000,
+             0x7FFF,
+             [&](uint16_t idx) {
+                 return ReadRom(idx - 0x4000 + _rom_nbr * 0x4000);
+             },
+             [&](uint16_t, byte b) { _selector = RamRomSelector(b & 1); }},
+            {
+                "cartridge_ram",
+                0xA000,
+                0xBFFF,
+                [&](uint16_t idx) {
+                    return _ram[(idx - 0xA000) + _ram_nbr * 0x2000];
+                },
+                [&](uint16_t idx, byte b) {
+                    _ram[(idx - 0xA000) + _ram_nbr * 0x2000] = b;
+                },
 
-                    }};
+            }};
     }
 
    private:

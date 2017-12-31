@@ -23,13 +23,14 @@ class Cartridge {
        public:
         Controller(std::vector<byte>&& data) : _data(std::move(data)) {}
 
+        const Addr& Find(uint16_t idx) const { return FindAddr(idx); }
         byte Read(uint16_t idx) const { return FindAddr(idx)._get(idx); }
 
         void Write(uint16_t idx, byte v) { FindAddr(idx)._set(idx, v); }
 
        protected:
-        byte ReadRom(uint16_t idx) const { return _data[idx]; }
-        void WriteRom(uint16_t idx, byte x) { _data[idx] = x; }
+        byte ReadRom(uint32_t idx) const { return _data[idx]; }
+        void WriteRom(uint32_t idx, byte x) { _data[idx] = x; }
 
         std::vector<Addr> _mem_map;
 
@@ -39,6 +40,7 @@ class Cartridge {
         std::vector<byte> _data;
     };
 
+    const Addr& Find(uint16_t index) const { return _ctrl->Find(index); }
     byte Read(uint16_t index) const { return _ctrl->Read(index); }
     void Write(uint16_t index, byte val) { _ctrl->Write(index, val); }
 

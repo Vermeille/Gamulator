@@ -11,11 +11,12 @@
 std::array<std::unique_ptr<Z80::InstrBase>, 256> Z80::_instr;
 std::array<std::unique_ptr<Z80::InstrBase>, 256> Z80::_cb_instr;
 
-Z80::Z80(AddressBus& addr, Video& v, LinkCable& lk, Timer& timer)
+Z80::Z80(AddressBus& addr, Video& v, LinkCable& lk, Timer& timer, Sound& snd)
     : _sp(uint16_t(0xFFFE)),
       _pc(uint16_t(0x100)),
       _addr(addr),
       _lk(lk),
+      _snd(snd),
       _vid(v),
       _timer(timer),
       _interrupts(uint8_t(0xFF)),

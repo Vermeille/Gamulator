@@ -6,14 +6,19 @@
 #include "cartridge.h"
 #include "keypad.h"
 #include "link.h"
+#include "sound.h"
 #include "timer.h"
 #include "utils.h"
 #include "video.h"
 
 class AddressBus {
    public:
-    AddressBus(
-        Cartridge& card, Video& v, LinkCable& lk, Keypad& kp, Timer& timer);
+    AddressBus(Cartridge& card,
+               Video& v,
+               LinkCable& lk,
+               Keypad& kp,
+               Timer& timer,
+               Sound& snd);
 
     void Set(uint16_t index, Data8 val);
 
@@ -33,6 +38,7 @@ class AddressBus {
 
     byte GetIntByte() const;
     Cartridge& _card;
+    Sound& _snd;
     Video& _vid;
     LinkCable& _lk;
     Keypad _kp;

@@ -15,6 +15,7 @@
 #include "addressbus.h"
 #include "cartridge.h"
 #include "keypad.h"
+#include "sound.h"
 #include "video.h"
 #include "z80.h"
 
@@ -35,8 +36,6 @@ int main(int argc, char** argv) {
     if (argc <= 1) {
         return EXIT_FAILURE;
     }
-
-    Video v;
 
     std::string gamefile;
     for (int i = 1; i < argc; ++i) {
@@ -60,12 +59,14 @@ int main(int argc, char** argv) {
             return 1;
         }
     }
+    Video v;
+    Sound s;
     Cartridge card(gamefile);
     LinkCable lk;
     Keypad kp;
     Timer timer;
-    AddressBus addrbus(card, v, lk, kp, timer);
-    Z80 processor(addrbus, v, lk, timer);
+    AddressBus addrbus(card, v, lk, kp, timer, s);
+    Z80 processor(addrbus, v, lk, timer, s);
     z80_ptr = &processor;
     struct sigaction action;
     action.sa_handler = segv_handler;

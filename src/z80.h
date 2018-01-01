@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <functional>
 #include "addressbus.h"
+#include "sound.h"
 #include "video.h"
 
 typedef unsigned char byte;
@@ -10,7 +11,7 @@ typedef uint16_t word;
 
 class Z80 {
    public:
-    Z80(AddressBus& addr, Video& v, LinkCable& lk, Timer& timer);
+    Z80(AddressBus& addr, Video& v, LinkCable& lk, Timer& timer, Sound& s);
 
     void Process();
 
@@ -84,6 +85,7 @@ class Z80 {
     AddressBus& _addr;
     LinkCable _lk;
     Video& _vid;
+    Sound& _snd;
     Timer& _timer;
     static std::array<std::unique_ptr<InstrBase>, 256> _instr;
     static std::array<std::unique_ptr<InstrBase>, 256> _cb_instr;

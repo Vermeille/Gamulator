@@ -18,6 +18,9 @@ add_executable(emu
     palette.h
     spritestable.h
     spritestable.cpp
+    sound.h
+    osc.h
+    osc.cpp
     )
 
-target_link_libraries(emu sfml-window sfml-system sfml-graphics)
+target_link_libraries(emu sfml-window sfml-system sfml-graphics sfml-audio)

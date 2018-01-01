@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <cassert>
 #include <cstdint>
 #include <vector>
@@ -17,16 +18,11 @@ class Osc {
 
     int nb_samples() const { return _data.size(); }
 
-    int set_len(int ms) { _samples_to_play = (ms * 44100) / 1000; }
-    void set_timed(bool cont) { _timed = cont; }
-
    private:
     int GetPhaseLen(int period_len) const;
 
     std::vector<int16_t> _data;
-    int _freq;
-    int _phase;
-    int _duty;
-    int _samples_to_play;
-    bool _timed;
+    std::atomic<int> _freq;
+    std::atomic<int> _phase;
+    std::atomic<int> _duty;
 };

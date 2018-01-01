@@ -10,15 +10,6 @@ int16_t* Osc::GenSamples() {
     const int period_len = FreqToNbSamples(_freq);
     const int phase_len = GetPhaseLen(period_len);
     for (int i = 0; i < 1024; ++i) {
-        if (_timed) {
-            if (_samples_to_play == 0) {
-                _data[i] = 0;
-                continue;
-            } else {
-                --_samples_to_play;
-            }
-        }
-
         if (_phase < phase_len) {
             _data[i] = std::numeric_limits<int16_t>::min();
         } else {

@@ -5,105 +5,106 @@
 
 #include <SFML/Audio.hpp>
 
-#include "osc.h"
+#include "toneosc.h"
 #include "utils.h"
 
-class ToneSweep : public sf::SoundStream {
+class WaveReader {
    public:
-    ToneSweep() : _freq(440) { initialize(1, 44100); }
+    WaveReader() : _active(true), _freq(440), _cache(1024) {}
 
-    void set_sweep(byte) {}
-    void set_len_pattern(byte x) {
-        _len_pattern_cache = x;
-        _osc.set_duty(x >> 6);
-        _osc.set_len((64 - (x & 0x1f)) * 1000 / 256);
+    int16_t* GenSamples() {
+        if (!_active) {
+            std::fill(_cache.begin(), _cache.end(), 0);
+            return &_cache[0];
+        }
+
+        for (int i = 0; i < _cache.size(); ++i) {
+            if (_cursor >= _data.size() * 2) {
+                _cursor = 0;
+            }
+            _cache[i] = NibbleToInt16(NthNibble(_cursor * _data.size() * 2));
+            _cursor += _freq / 44100.;
+            if (_cursor >= 1) {
+                _cursor -= 1;
+            }
+        }
+
+        return &_cache[0];
     }
 
-    byte len_pattern() const { return _len_pattern_cache; }
+    int nb_samples() const { return _cache.size(); }
 
-    void set_freq_lo(byte x) {
-        _freq = (0xff00 & _freq) | x;
-        osc_set_freq();
-    }
-    void set_freq_hi(byte x) {
-        _freq = (_freq & 0xff) | ((x & 0b111) << 8);
-        osc_set_freq();
-        _osc.set_timed(x & (1 << 6));
-    }
+    void Write(uint16_t addr, byte x) { _data[addr - 0xFF30] = x; }
+    byte Read(uint16_t addr) const { return _data[addr - 0xFF30]; }
+
+    void set_freq(int f) { _freq = f; }
+
+    void set_active(bool b) { _active = b; }
+    bool active() const { return _active; }
 
    private:
-    void osc_set_freq() { _osc.set_freq(131072 / (2048 - _freq)); }
+    byte NthNibble(int16_t n) const {
+        byte b = _data[n / 2];
+        if (n % 2) {
+            return b >> 4;
+        } else {
+            return b & 0xf;
+        }
+    }
+
+    int16_t NibbleToInt16(byte x) const {
+        return std::numeric_limits<int16_t>::min() + x * (65535 / 16);
+    }
+
+    float _cursor;
+    bool _active;
+    int _freq;
+    std::vector<int16_t> _cache;
+    std::array<byte, 0xFF40 - 0xFF30> _data;
+};
+
+class WaveOutput : public sf::SoundStream {
+   public:
+    WaveOutput() { initialize(1, 44100); }
+    void set_active(byte x) { _wav.set_active(x & (1 << 7)); }
+    bool active() const { return _wav.active(); }
+    void set_length(byte) {}
+    byte length() { return 0xff; }
+    void set_level(byte) {}
+    byte level() { return 0xff; }
+
+    void set_freq_lo(byte x) {
+        _freq = (_freq & 0xff00) | x;
+        wav_set_freq();
+    }
+
+    byte freq_hi() const { return _hi_cache; }
+    void set_freq_hi(byte x) {
+        _hi_cache = x;
+        _freq = (_freq & 0xff) | ((x & 7) << 8);
+        wav_set_freq();
+    }
+
+    void Write(uint16_t addr, byte x) { _wav.Write(addr, x); }
+    byte Read(uint16_t addr) const { return _wav.Read(addr); }
+
+   private:
+    void wav_set_freq() { _wav.set_freq(65536 / (2048 - _freq)); }
 
     virtual bool onGetData(Chunk& data) override {
-        data.samples = _osc.GenSamples();
-        data.sampleCount = _osc.nb_samples();
+        int16_t* buffer = _wav.GenSamples();
+        int nb = _wav.nb_samples();
+
+        data.samples = buffer;
+        data.sampleCount = nb;
         return true;
     }
 
     virtual void onSeek(sf::Time) override {}
 
+    WaveReader _wav;
+    LengthCounter _length;
     int _freq;
-    Osc _osc;
-    byte _len_pattern_cache;
-};
-
-class WaveOutput {
-   public:
-    void set_nr30_active(byte x) { _active = x & (1 << 7); }
-    bool nr30_active() const { return _active << 7; }
-
-    void set_nr31_length(byte x) { _length = x; }
-    byte nr31_length() const { return _length; }
-
-    void set_nr32_level(byte x) { _level = (x >> 5); }
-    byte nr32_level() const { return _level; }
-
-    void set_nr33_freq_lo(byte x) { _freq = (_freq & 0xff00) | x; }
-
-    byte nr34_freq_hi() const { return _hi_cache; }
-    void set_nr34_freq_hi(byte x) {
-        _hi_cache = x;
-        _freq = (_freq & 0x00ff) | (x << 8);
-        _continuous = (x >> 6) & 1;
-    }
-
-    int len_as_ms() const { return (256 - _length) * (1. / 256) * 1000; }
-
-    void Play() const {
-        if (!_active) {
-            return;
-        }
-
-        sf::Int16 data[(0xFF3F - 0xFF30) * 2];
-
-        for (unsigned int i = 0, j = _data.size() * 2 - 2; i < _data.size();
-             ++i, j -= 2) {
-            data[j + 1] = _data[i] >> 4;
-            data[j] = _data[i] & 0xf;
-        }
-
-        for (sf::Int16& x : data) {
-            x = std::numeric_limits<int16_t>::min() +
-                x * ((std::numeric_limits<int16_t>::max() -
-                      std::numeric_limits<int16_t>::min()) /
-                     16);
-        }
-
-        sf::SoundBuffer sb;
-        sb.loadFromSamples(data, _data.size() * 2, 1, 65536 / (2048 - _freq));
-        sf::Sound s;
-        s.setBuffer(sb);
-
-        s.play();
-    }
-
-   private:
-    bool _active;
-    byte _length;
-    byte _level;
-    int _freq;
-    bool _continuous;
-    std::array<byte, 0xFF3F - 0xFF30> _data;
 
     byte _hi_cache;
 };
@@ -113,15 +114,16 @@ class Sound {
     Sound() {
         _tone1.play();
         _tone2.play();
+        _wav.play();
     }
 
-    WaveOutput& wave_output() { return _wav; }
+    WaveOutput& wave() { return _wav; }
 
-    ToneSweep& channel_1() { return _tone1; }
-    ToneSweep& channel_2() { return _tone2; }
+    ToneOsc& channel_1() { return _tone1; }
+    ToneOsc& channel_2() { return _tone2; }
 
    private:
     WaveOutput _wav;
-    ToneSweep _tone1;
-    ToneSweep _tone2;
+    ToneOsc _tone1;
+    ToneOsc _tone2;
 };

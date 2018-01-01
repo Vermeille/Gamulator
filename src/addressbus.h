@@ -38,11 +38,11 @@ class AddressBus {
 
     byte GetIntByte() const;
     Cartridge& _card;
-    Sound& _snd;
     Video& _vid;
     LinkCable& _lk;
     Keypad _kp;
     Timer& _timer;
+    Sound& _snd;
     std::array<Data8, 0xFFFF - 0xFF80> _hram;
     std::array<Data8, 0xE000 - 0xC000> _wram0;
 

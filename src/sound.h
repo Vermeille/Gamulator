@@ -12,7 +12,7 @@ class ToneSweep : public sf::SoundStream {
    public:
     ToneSweep() : _freq(440) { initialize(1, 44100); }
 
-    void set_sweep(byte x) {}
+    void set_sweep(byte) {}
     void set_len_pattern(byte x) {
         _len_pattern_cache = x;
         _osc.set_duty(x >> 6);
@@ -76,7 +76,7 @@ class WaveOutput {
 
         sf::Int16 data[(0xFF3F - 0xFF30) * 2];
 
-        for (int i = 0, j = _data.size() * 2 - 2; i < _data.size();
+        for (unsigned int i = 0, j = _data.size() * 2 - 2; i < _data.size();
              ++i, j -= 2) {
             data[j + 1] = _data[i] >> 4;
             data[j] = _data[i] & 0xf;

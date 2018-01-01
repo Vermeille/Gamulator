@@ -18,8 +18,8 @@ class Video {
    public:
     Video()
         : _pixels(new sf::Uint8[160 * 144 * 4]),
-          _sprites(_pixels.get(), *this),
           _clock(0),
+          _sprites(_pixels.get(), *this),
           _window(sf::VideoMode(160 * 4, 144 * 4), "Gameboy") {
         _texture.create(160, 144);
         _oam.fill(uint8_t(0));

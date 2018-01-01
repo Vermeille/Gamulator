@@ -16,8 +16,8 @@ Z80::Z80(AddressBus& addr, Video& v, LinkCable& lk, Timer& timer, Sound& snd)
       _pc(uint16_t(0x100)),
       _addr(addr),
       _lk(lk),
-      _snd(snd),
       _vid(v),
+      _snd(snd),
       _timer(timer),
       _interrupts(uint8_t(0xFF)),
       _halted(false) {

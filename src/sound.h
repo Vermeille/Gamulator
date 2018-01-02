@@ -22,7 +22,8 @@ class WaveReader {
             if (_cursor >= _data.size() * 2) {
                 _cursor = 0;
             }
-            _cache[i] = NibbleToInt16(NthNibble(_cursor * _data.size() * 2));
+            _cache[i] = AdjustLevel(
+                NibbleToInt16(NthNibble(_cursor * _data.size() * 2)));
             _cursor += _freq / 44100.;
             if (_cursor >= 1) {
                 _cursor -= 1;
@@ -39,6 +40,7 @@ class WaveReader {
 
     void set_freq(int f) { _freq = f; }
 
+    void set_level(byte lvl) { _level = lvl & 3; }
     void set_active(bool b) { _active = b; }
     bool active() const { return _active; }
 
@@ -56,9 +58,25 @@ class WaveReader {
         return std::numeric_limits<int16_t>::min() + x * (65535 / 16);
     }
 
+    int16_t AdjustLevel(int16_t x) const {
+        switch (x) {
+            default:
+                assert(false);
+            case 0:
+                return 0;
+            case 1:
+                return x;
+            case 2:
+                return x / 2;
+            case 3:
+                return x / 4;
+        }
+    }
+
     float _cursor;
     bool _active;
     int _freq;
+    byte _level;
     std::vector<int16_t> _cache;
     std::array<byte, 0xFF40 - 0xFF30> _data;
 };
@@ -68,10 +86,14 @@ class WaveOutput : public sf::SoundStream {
     WaveOutput() { initialize(1, 44100); }
     void set_active(byte x) { _wav.set_active(x & (1 << 7)); }
     bool active() const { return _wav.active(); }
-    void set_length(byte) {}
-    byte length() { return 0xff; }
-    void set_level(byte) {}
-    byte level() { return 0xff; }
+
+    void set_length(byte x) { _length.set_len((256 - x) * 1000 / 256); }
+
+    void set_level(byte x) {
+        _level = x;
+        _wav.set_level((x >> 6) & 3);
+    }
+    byte level() { return _level; }
 
     void set_freq_lo(byte x) {
         _freq = (_freq & 0xff00) | x;
@@ -83,6 +105,10 @@ class WaveOutput : public sf::SoundStream {
         _hi_cache = x;
         _freq = (_freq & 0xff) | ((x & 7) << 8);
         wav_set_freq();
+        _length.set_timed(x & (1 << 6));
+        if (x & (1 << 7)) {
+            _length.Reset();
+        }
     }
 
     void Write(uint16_t addr, byte x) { _wav.Write(addr, x); }
@@ -95,6 +121,8 @@ class WaveOutput : public sf::SoundStream {
         int16_t* buffer = _wav.GenSamples();
         int nb = _wav.nb_samples();
 
+        _length.Process(buffer, nb);
+
         data.samples = buffer;
         data.sampleCount = nb;
         return true;
@@ -105,7 +133,7 @@ class WaveOutput : public sf::SoundStream {
     WaveReader _wav;
     LengthCounter _length;
     int _freq;
-
+    int _level;
     byte _hi_cache;
 };
 

@@ -45,7 +45,6 @@ class ToneOsc : public sf::SoundStream {
         _length.set_timed(x & (1 << 6));
         if (x & (1 << 7)) {
             _env.Reset();
-            _length.set_timed(false);
         }
     }
 

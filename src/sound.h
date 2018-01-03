@@ -88,7 +88,7 @@ class WaveOutput : public sf::SoundStream {
 
     void set_level(byte x) {
         _level = x;
-        _wav.set_level((x >> 6) & 3);
+        _wav.set_level((x >> 5) & 3);
     }
     byte level() { return _level; }
 
@@ -118,7 +118,7 @@ class WaveOutput : public sf::SoundStream {
         int16_t* buffer = _wav.GenSamples();
         int nb = _wav.nb_samples();
 
-        //_length.Process(buffer, nb);
+        _length.Process(buffer, nb);
 
         data.samples = buffer;
         data.sampleCount = nb;
@@ -139,7 +139,7 @@ class Sound {
     Sound() {
         _tone1.play();
         _tone2.play();
-        //_wav.play();
+        _wav.play();
     }
 
     WaveOutput& wave() { return _wav; }

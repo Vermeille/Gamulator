@@ -2,81 +2,9 @@
 
 #include <SFML/Audio.hpp>
 
+#include "envelope.h"
 #include "lengthcounter.h"
 #include "osc.h"
-
-class Envelope {
-   public:
-    Envelope()
-        : _volume(15), _ascending(true), _samples_total(1), _samples(0) {}
-
-    void set_volume(byte x) { _start_volume = _volume = x & 0xf; }
-    void set_direction(bool ascending) { _ascending = ascending; }
-    void set_len(int ms) { _samples_total = ms * 44100 / 1000; }
-
-    void Process(int16_t* buffer, int n) {
-        if (_samples_total == 0) {
-            for (int i = 0; i < n; ++i) {
-                buffer[i] = AdjustVolume(buffer[i], _volume);
-            }
-            return;
-        }
-
-        if (_ascending) {
-            for (int i = 0; i < n; ++i) {
-                buffer[i] = AdjustVolume(buffer[i], Ascend());
-            }
-        } else {
-            for (int i = 0; i < n; ++i) {
-                buffer[i] = AdjustVolume(buffer[i], Descend());
-            }
-        }
-    }
-
-    void Reset() {
-        _samples = 0;
-        _volume = _start_volume.load();
-    }
-
-   private:
-    int Ascend() {
-        if (_volume >= 15) {
-            return 15;
-        }
-
-        if (_samples >= _samples_total) {
-            ++_volume;
-            _samples = 0;
-        } else {
-            ++_samples;
-        }
-        return _volume;
-    }
-
-    int Descend() {
-        if (_volume == 0) {
-            return 0;
-        }
-
-        if (_samples >= _samples_total) {
-            --_volume;
-            _samples = 0;
-        } else {
-            ++_samples;
-        }
-        return _volume;
-    }
-
-    int16_t AdjustVolume(int x, int vol) const {
-        return x * ((vol * 32767) / 15);
-    }
-
-    std::atomic<int> _volume;
-    std::atomic<int> _start_volume;
-    std::atomic<bool> _ascending;
-    std::atomic<int> _samples_total;
-    std::atomic<int> _samples;
-};
 
 class ToneOsc : public sf::SoundStream {
    public:

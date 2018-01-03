@@ -21,6 +21,8 @@ add_executable(emu
     sound.h
     osc.h
     osc.cpp
+    envelope.h
+    envelope.cpp
     )
 
 target_link_libraries(emu sfml-window sfml-system sfml-graphics sfml-audio)

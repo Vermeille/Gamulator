@@ -32,7 +32,6 @@ class ToneOsc : public sf::SoundStream {
     void set_freq_lo(byte x) {
         _freq = (0xff00 & _freq) | x;
         osc_set_freq();
-        _env.Reset();
     }
 
     byte freq_hi() const {

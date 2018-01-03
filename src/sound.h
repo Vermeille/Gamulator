@@ -81,10 +81,11 @@ class WaveReader {
 class WaveOutput : public sf::SoundStream {
    public:
     WaveOutput() { initialize(1, 44100); }
-    void set_active(byte x) { _wav.set_active(x & (1 << 7)); }
-    bool active() const { return _wav.active(); }
+    void set_active(byte x) { _wav.set_active((x & (1 << 7)) != 0); }
+    bool active() const { return _wav.active() << 7; }
 
     void set_length(byte x) { _length.set_len((256 - x) * 1000 / 256); }
+
 
     void set_level(byte x) {
         _level = x;
@@ -100,9 +101,9 @@ class WaveOutput : public sf::SoundStream {
     byte freq_hi() const { return _hi_cache; }
     void set_freq_hi(byte x) {
         _hi_cache = x;
-        _freq = (_freq & 0xff) | ((x & 7) << 8);
-        wav_set_freq();
+        _freq = (_freq & 0xff) | ((int(x) & 7) << 8);
         _length.set_timed(x & (1 << 6));
+        wav_set_freq();
         if (x & (1 << 7)) {
             _length.Reset();
         }
@@ -146,6 +147,10 @@ class Sound {
 
     ToneOsc& channel_1() { return _tone1; }
     ToneOsc& channel_2() { return _tone2; }
+
+    void set_mixer(byte x) {
+        _wav.setVolume((GetBit(x, 6) || GetBit(x, 2)) ? 100 : 0);
+    }
 
    private:
     WaveOutput _wav;

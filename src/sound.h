@@ -19,9 +19,6 @@ class WaveReader {
         }
 
         for (int i = 0; i < _cache.size(); ++i) {
-            if (_cursor >= _data.size() * 2) {
-                _cursor = 0;
-            }
             _cache[i] = AdjustLevel(
                 NibbleToInt16(NthNibble(_cursor * _data.size() * 2)));
             _cursor += _freq / 44100.;
@@ -48,9 +45,9 @@ class WaveReader {
     byte NthNibble(int16_t n) const {
         byte b = _data[n / 2];
         if (n % 2) {
-            return b >> 4;
-        } else {
             return b & 0xf;
+        } else {
+            return b >> 4;
         }
     }
 
@@ -59,7 +56,7 @@ class WaveReader {
     }
 
     int16_t AdjustLevel(int16_t x) const {
-        switch (x) {
+        switch (_level) {
             default:
                 assert(false);
             case 0:
@@ -121,7 +118,7 @@ class WaveOutput : public sf::SoundStream {
         int16_t* buffer = _wav.GenSamples();
         int nb = _wav.nb_samples();
 
-        _length.Process(buffer, nb);
+        //_length.Process(buffer, nb);
 
         data.samples = buffer;
         data.sampleCount = nb;
@@ -142,7 +139,7 @@ class Sound {
     Sound() {
         _tone1.play();
         _tone2.play();
-        _wav.play();
+        //_wav.play();
     }
 
     WaveOutput& wave() { return _wav; }

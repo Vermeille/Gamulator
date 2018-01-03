@@ -11,9 +11,9 @@ int16_t* Osc::GenSamples() {
     const int phase_len = GetPhaseLen(period_len);
     for (int i = 0; i < 1024; ++i) {
         if (_phase < phase_len) {
-            _data[i] = std::numeric_limits<int16_t>::min();
+            _data[i] = -1;
         } else {
-            _data[i] = std::numeric_limits<int16_t>::max();
+            _data[i] = 1;
         }
 
         ++_phase;

@@ -10,11 +10,13 @@ class ToneOsc : public sf::SoundStream {
    public:
     ToneOsc() : _freq(440) { initialize(1, 44100); }
 
+    byte sweep() const { return 0x80 | _sweep_cache; }
     void set_sweep(byte x) {
-        std::cout << "SET SWEEP: " << int(x) << "\n";
-        _osc.sweep().set_time(((int(x) >> 4) & 7) * 1000 / 128);
+        std::cout << "SET SWEEP: " << std::hex << int(x) << "\n";
+        _sweep_cache = x;
+        _osc.sweep().set_time((((int(x) >> 4) & 7) * 1000) / 128);
         _osc.sweep().set_direction(!GetBit(x, 3));
-        _osc.sweep().set_nb_of_sweeps(x & 7);
+        _osc.sweep().set_nb_of_shifts(x & 7);
     }
     void set_len_pattern(byte x) {
         _len_pattern_cache = x;
@@ -49,7 +51,7 @@ class ToneOsc : public sf::SoundStream {
         _length.set_timed(x & (1 << 6));
         if (x & (1 << 7)) {
             _env.Reset();
-            _osc.sweep().Reset();
+            _osc.sweep().Reset(_osc.freq());
         }
     }
 
@@ -76,6 +78,7 @@ class ToneOsc : public sf::SoundStream {
     LengthCounter _length;
     Envelope _env;
     Sweep _sweep;
+    byte _sweep_cache;
     byte _len_pattern_cache;
     byte _env_cache;
     byte _freq_hi_cache;

@@ -8,7 +8,7 @@ int16_t* Osc::GenSamples() {
         return &_data[0];
     }
     for (int i = 0; i < 1024; ++i) {
-        _freq = _sweep.Process(_freq);
+        _freq = _sweep.Process();
         const int period_len = FreqToNbSamples(_freq);
         const int phase_len = GetPhaseLen(period_len);
         if (_phase < phase_len) {
@@ -40,27 +40,22 @@ int Osc::GetPhaseLen(int period_len) const {
     }
 }
 
-    int Sweep::Process(int f) {
-        if (_nb == 0 || _sweep_count == 0) {
-            return f;
-        }
-
-        if (_count == 0) {
-            _count = _sweep_count.load();
-
-            if (_ascending) {
-                return f + (f / (2 << _nb));
-            } else {
-                std::cout << "f: " << f << " nb:" << _nb << "\n";
-                int r = f - (f / ( 1 << (_nb + 1)));
-                if (r <= 0) {
-                    return f;
-                }
-                return r;
-                //return f - (f / (2 << _nb));
-            }
-        }
-        --_count;
-        return f;
+int Sweep::Process() {
+    if (_nb == 0 || _sweep_count == 0) {
+        return _f;
     }
 
+    if (_count <= 0) {
+        _count = _sweep_count.load();
+
+        int n = _nb;
+        if (_ascending) {
+            _f = ((1 << n) * _f) / ((1 << n) - 1);
+        } else {
+            _f = ((1 << n) * _f) / ((1 << n) + 1);
+        }
+        std::cout << std::dec << _f << "\n";
+    }
+    --_count;
+    return _f;
+}

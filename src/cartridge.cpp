@@ -27,22 +27,22 @@ class Raw : public Cartridge::Controller {
             {"rom_bank_0",
              0x0000,
              0x3FFF,
-             [&](uint16_t idx) { return ReadRom(idx); },
+             [&](uint16_t idx) { return Rom(idx); },
              [&](uint16_t, byte) {
                  cerror << "Can't switch ROM bank without MBC\n";
              }},
             {"rom_bank_switchable",
              0x4000,
              0x7FFF,
-             [&](uint16_t idx) { return ReadRom(idx); },
+             [&](uint16_t idx) { return Rom(idx); },
              [&](uint16_t, byte) {
                  cerror << "Can't switch ROM bank without MBC\n";
              }},
             {"ram_bank",
              0xA000,
              0xBFFF,
-             [&](uint16_t idx) { return ReadRam(idx - 0xA000); },
-             [&](uint16_t idx, byte b) { WriteRam(idx - 0xA000, b); }},
+             [&](uint16_t idx) { return Ram(idx - 0xA000); },
+             [&](uint16_t idx, byte b) { Ram(idx - 0xA000) = b; }},
         };
     }
 };
@@ -57,14 +57,14 @@ class MBC1 : public Cartridge::Controller {
             {"rom_bank_0",
              0x0000,
              0x1FFF,
-             [&](uint16_t idx) { return ReadRom(idx); },
+             [&](uint16_t idx) { return Rom(idx); },
              [&](uint16_t, byte) {
                  // enable RAM aka do nothing
              }},
             {"rom_bank_0/low_bits",
              0x2000,
              0x3FFF,
-             [&](uint16_t idx) { return ReadRom(idx); },
+             [&](uint16_t idx) { return Rom(idx); },
              [&](uint16_t, byte b) {
                  b = b & 0b1'1111;
                  b = (b == 0) ? 1 : b;
@@ -74,10 +74,10 @@ class MBC1 : public Cartridge::Controller {
              0x4000,
              0x5FFF,
              [&](uint16_t idx) {
-                 return ReadRom(idx - 0x4000 + _rom_nbr * 0x4000);
+                 return Rom(idx - 0x4000 + _rom_nbr * 0x4000);
              },
              [&](uint16_t, byte b) {
-                 if (_selector == Rom) {
+                 if (_selector == RamRomSelector::Rom) {
                      _rom_nbr = (_rom_nbr & ~(0b11 << 5)) | ((b & 0b11) << 5);
                  } else {
                      _ram_nbr = b & 0b11;
@@ -87,24 +87,24 @@ class MBC1 : public Cartridge::Controller {
              0x6000,
              0x7FFF,
              [&](uint16_t idx) {
-                 return ReadRom(idx - 0x4000 + _rom_nbr * 0x4000);
+                 return Rom(idx - 0x4000 + _rom_nbr * 0x4000);
              },
              [&](uint16_t, byte b) { _selector = RamRomSelector(b & 1); }},
             {"cartridge_ram",
              0xA000,
              0xBFFF,
              [&](uint16_t idx) {
-                 return ReadRam((idx - 0xA000) + _ram_nbr * 0x2000);
+                 return Ram((idx - 0xA000) + _ram_nbr * 0x2000);
              },
              [&](uint16_t idx, byte b) {
-                 WriteRam((idx - 0xA000) + _ram_nbr * 0x2000, b);
+                 Ram((idx - 0xA000) + _ram_nbr * 0x2000) = b;
              }}};
     }
 
    private:
     int _rom_nbr;
     byte _ram_nbr;
-    enum RamRomSelector { Rom = 0, Ram = 1 } _selector;
+    enum class RamRomSelector { Rom = 0, Ram = 1 } _selector;
 };
 
 class MBC3 : public Cartridge::Controller {
@@ -113,74 +113,111 @@ class MBC3 : public Cartridge::Controller {
         : Cartridge::Controller(std::move(data), 4 * 0x2000 + 48),
           _rom_nbr(1),
           _rtc_select(RTCSelect::None) {
-        _mem_map = {
-            {"rom_bank_0",
-             0x0000,
-             0x1FFF,
-             [&](uint16_t idx) { return ReadRom(idx); },
-             [&](uint16_t, byte) {
-                 std::cout << "RAM/Timer enable not implmented\n";
-             }},
-            {"rom_bank_0",
-             0x2000,
-             0x3FFF,
-             [&](uint16_t idx) { return ReadRom(idx); },
-             [&](uint16_t, byte b) { _rom_nbr = (b == 0 ? 1 : b); }},
-            {"rom_bank_switchable",
-             0x4000,
-             0x5FFF,
-             [&](uint16_t idx) {
-                 return ReadRom(idx - 0x4000 + _rom_nbr * 0x4000);
-             },
-             [&](uint16_t, byte b) {
-                 if (b < 4) {
-                     _ram_nbr = b & 0b11;
-                     _rtc_select = RTCSelect::None;
-                 } else {
-                     _rtc_select = RTCSelect(b);
-                 }
-             }},
-            {"rom_bank_switchable",
-             0x6000,
-             0x7FFF,
-             [&](uint16_t idx) {
-                 return ReadRom(idx - 0x4000 + _rom_nbr * 0x4000);
-             },
-             [&](uint16_t, byte) { std::cout << "RTC not implemented\n"; }},
-            {
-                "cartridge_ram",
-                0xA000,
-                0xBFFF,
-                [&](uint16_t idx) -> byte {
-                    if (_rtc_select == RTCSelect::None) {
-                        return ReadRam((idx - 0xA000) + _ram_nbr * 0x2000);
-                    } else {
-                        std::time_t now = std::time(nullptr);
-                        std::tm* time = std::localtime(&now);
-                        switch (_rtc_select) {
-                            case RTCSelect::Sec:
-                                return time->tm_sec;
-                            case RTCSelect::Min:
-                                return time->tm_min;
-                            case RTCSelect::Hour:
-                                return time->tm_hour;
-                            case RTCSelect::DayLow:
-                                return time->tm_mday & 0xFF;
-                            case RTCSelect::DayHigh:
-                                return GetBit(time->tm_mday, 9);
-                            default:
-                                return 0xFF;
-                        }
-                    }
-                },
-                [&](uint16_t idx, byte b) {
-                    WriteRam((idx - 0xA000) + _ram_nbr * 0x2000, b);
-                },
+        _mem_map = {{"rom_bank_0",
+                     0x0000,
+                     0x1FFF,
+                     [&](uint16_t idx) { return Rom(idx); },
+                     [&](uint16_t, byte) {
+                         std::cout << "RAM/Timer enable not implmented\n";
+                     }},
+                    {"rom_bank_0",
+                     0x2000,
+                     0x3FFF,
+                     [&](uint16_t idx) { return Rom(idx); },
+                     [&](uint16_t, byte b) { _rom_nbr = (b == 0 ? 1 : b); }},
+                    {"rom_bank_switchable",
+                     0x4000,
+                     0x5FFF,
+                     [&](uint16_t idx) {
+                         return Rom(idx - 0x4000 + _rom_nbr * 0x4000);
+                     },
+                     [&](uint16_t, byte b) {
+                         if (b < 8) {
+                             _ram_nbr = b & 0b11;
+                             _rtc_select = RTCSelect::None;
+                         } else {
+                             std::cout << "RTC SELECT: " << int(b) << "\n";
+                             _rtc_select = RTCSelect(b);
+                         }
+                     }},
+                    {"rom_bank_switchable",
+                     0x6000,
+                     0x7FFF,
+                     [&](uint16_t idx) {
+                         return Rom(idx - 0x4000 + _rom_nbr * 0x4000);
+                     },
+                     [&](uint16_t, byte x) {
+                         std::cout << "RTC LATCH: " << int(x) << "\n";
+                     }},
+                    {
+                        "cartridge_ram",
+                        0xA000,
+                        0xBFFF,
+                        [&](uint16_t idx) -> byte {
+                            if (_rtc_select == RTCSelect::None) {
+                                return Ram((idx - 0xA000) + _ram_nbr * 0x2000);
+                            } else {
+                                std::cout << "READ RTC\n";
+                                std::time_t now = std::time(nullptr);
+                                std::tm* time = std::localtime(&now);
+                                switch (_rtc_select) {
+                                    case RTCSelect::Sec:
+                                        return time->tm_sec;
+                                    case RTCSelect::Min:
+                                        return time->tm_min;
+                                    case RTCSelect::Hour:
+                                        return time->tm_hour;
+                                    case RTCSelect::DayLow:
+                                        return time->tm_mday & 0xFF;
+                                    case RTCSelect::DayHigh:
+                                        return GetBit(time->tm_mday, 9);
+                                    default:
+                                        return 0xFF;
+                                }
+                            }
+                        },
+                        [&](uint16_t idx, byte b) {
+                            if (_rtc_select == RTCSelect::None) {
+                                Ram((idx - 0xA000) + _ram_nbr * 0x2000) = b;
+                            } else {
+                                std::cout << "WRITE RTC\n";
+                                std::time_t now = std::time(nullptr);
+                                std::tm* time = std::localtime(&now);
+                                switch (_rtc_select) {
+                                    case RTCSelect::Sec:
+                                    case RTCSelect::Min:
+                                    case RTCSelect::Hour:
+                                    case RTCSelect::DayLow:
+                                    case RTCSelect::DayHigh:
+                                    default:
+                                        return;
+                                }
+                            }
+                        },
 
-            }};
+                    }};
     }
 
    private:
+    struct RTCRegs {
+        int secs;
+        int mins;
+        int hours;
+        int days;
+        int days_high;
+        int secs_latch;
+        int mins_latch;
+        int hours_latch;
+        int days_latch;
+        int days_high_latch;
+        int timestamp;
+        int dummy;
+    };
+
+    MBC3::RTCRegs& GetRTC() {
+        return reinterpret_cast<RTCRegs&>(Ram(4 * 0x2000));
+    }
+
     enum class RTCSelect {
         None = 0,
         Sec = 0x8,
@@ -201,19 +238,19 @@ class MBC5 : public Cartridge::Controller {
             {"rom_bank_0",
              0x0000,
              0x1FFF,
-             [&](uint16_t idx) { return ReadRom(idx); },
+             [&](uint16_t idx) { return Rom(idx); },
              [&](uint16_t, byte) {
                  std::cout << "RAM/Timer enable not implmented\n";
              }},
             {"rom_bank_0",
              0x2000,
              0x2FFF,
-             [&](uint16_t idx) { return ReadRom(idx); },
+             [&](uint16_t idx) { return Rom(idx); },
              [&](uint16_t, byte b) { _rom_nbr = (_rom_nbr & ~(1 << 9)) | b; }},
             {"rom_bank_0",
              0x3000,
              0x3FFF,
-             [&](uint16_t idx) { return ReadRom(idx); },
+             [&](uint16_t idx) { return Rom(idx); },
              [&](uint16_t, byte idx) {
                  _rom_nbr = (_rom_nbr & 0xff) | ((idx & 1) << 9);
              }},
@@ -221,14 +258,14 @@ class MBC5 : public Cartridge::Controller {
              0x4000,
              0x5FFF,
              [&](uint16_t idx) {
-                 return ReadRom(idx - 0x4000 + _rom_nbr * 0x4000);
+                 return Rom(idx - 0x4000 + _rom_nbr * 0x4000);
              },
              [&](uint16_t, byte b) { _ram_nbr = b & 0xf; }},
             {"rom_bank_switchable",
              0x6000,
              0x7FFF,
              [&](uint16_t idx) {
-                 return ReadRom(idx - 0x4000 + _rom_nbr * 0x4000);
+                 return Rom(idx - 0x4000 + _rom_nbr * 0x4000);
              },
              [&](uint16_t, byte) { std::cout << "RTC not implemented\n"; }},
             {
@@ -236,10 +273,10 @@ class MBC5 : public Cartridge::Controller {
                 0xA000,
                 0xBFFF,
                 [&](uint16_t idx) {
-                    return ReadRam((idx - 0xA000) + _ram_nbr * 0x2000);
+                    return Ram((idx - 0xA000) + _ram_nbr * 0x2000);
                 },
                 [&](uint16_t idx, byte b) {
-                    WriteRam((idx - 0xA000) + _ram_nbr * 0x2000, b);
+                    Ram((idx - 0xA000) + _ram_nbr * 0x2000) = b;
                 },
 
             }};
@@ -331,10 +368,6 @@ void Cartridge::Controller::LoadRam(const std::string& filename) {
     }
 
     file.read(reinterpret_cast<char*>(&_ram[0]), _ram.size());
-    if (!file.eof()) {
-        std::cerr << "Invalid save file: size does not match\n";
-        exit(1);
-    }
 }
 
 void Cartridge::Controller::SaveRam(const std::string& filename) {

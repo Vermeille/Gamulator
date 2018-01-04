@@ -35,11 +35,11 @@ class Cartridge {
         void SaveRam(const std::string& filename);
 
        protected:
-        byte ReadRom(uint32_t idx) const { return _data[idx]; }
-        void WriteRom(uint32_t idx, byte x) { _data[idx] = x; }
+        byte& Rom(uint32_t idx) { return _data[idx]; }
+        byte Rom(uint32_t idx) const { return _data[idx]; }
 
-        byte ReadRam(uint32_t idx) const { return _ram[idx]; }
-        void WriteRam(uint32_t idx, byte x) { _ram[idx] = x; }
+        byte& Ram(uint32_t idx) { return _ram[idx]; }
+        byte Ram(uint32_t idx) const { return _ram[idx]; }
 
         std::vector<Addr> _mem_map;
 

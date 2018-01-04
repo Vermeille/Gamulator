@@ -53,22 +53,35 @@ void Video::Clock() {
 }
 
 void Video::NewFrame() {
-    sf::Event event;
-    while (_window.pollEvent(event)) {
-        // Request for closing the window
-        if (event.type == sf::Event::Closed) {
-            _window.close();
-            exit(0);
-        }
+    static int skip = 0;
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) &&
+        sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
+        skip = skip ? skip : 8;
+    } else if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl)) {
+        skip = skip ? skip : 2;
+    } else {
+        skip = 1;
     }
 
-    _texture.update(_pixels.get());
-    sf::Sprite sp;
-    sp.setScale(4, 4);
-    sp.setTexture(_texture);
-    _window.draw(sp);
-    _window.display();
-    _window.clear(sf::Color::Blue);
+    --skip;
+    if (skip == 0) {
+        sf::Event event;
+        while (_window.pollEvent(event)) {
+            // Request for closing the window
+            if (event.type == sf::Event::Closed) {
+                _window.close();
+                exit(0);
+            }
+        }
+
+        _texture.update(_pixels.get());
+        sf::Sprite sp;
+        sp.setScale(4, 4);
+        sp.setTexture(_texture);
+        _window.draw(sp);
+        _window.display();
+        _window.clear(sf::Color::Blue);
+    }
 }
 
 void Video::RenderBg(int line) {

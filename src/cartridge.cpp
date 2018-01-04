@@ -43,7 +43,7 @@ class Raw : public Cartridge::Controller {
              [&](uint16_t idx) { return _ram[idx - 0xA000]; },
              [&](uint16_t idx, byte b) { _ram[idx - 0xA000] = b; }},
         };
-    };
+    }
 
    private:
     std::array<byte, 0xC000 - 0xA000> _ram;
@@ -52,7 +52,10 @@ class Raw : public Cartridge::Controller {
 class MBC1 : public Cartridge::Controller {
    public:
     MBC1(std::vector<byte>&& data)
-        : Cartridge::Controller(std::move(data)), _rom_nbr(1) {
+        : Cartridge::Controller(std::move(data)),
+          _rom_nbr(1),
+          _ram_nbr(0),
+          _ram(4 * 0x2000) {
         _mem_map = {
             {"rom_bank_0",
              0x0000,
@@ -90,23 +93,20 @@ class MBC1 : public Cartridge::Controller {
                  return ReadRom(idx - 0x4000 + _rom_nbr * 0x4000);
              },
              [&](uint16_t, byte b) { _selector = RamRomSelector(b & 1); }},
-            {
-                "cartridge_ram",
-                0xA000,
-                0xBFFF,
-                [&](uint16_t idx) {
-                    return _ram[(idx - 0xA000) + _ram_nbr * 0x2000];
-                },
-                [&](uint16_t idx, byte b) {
-                    _ram[(idx - 0xA000) + _ram_nbr * 0x2000] = b;
-                },
-
-            }};
+            {"cartridge_ram",
+             0xA000,
+             0xBFFF,
+             [&](uint16_t idx) {
+                 return _ram[(idx - 0xA000) + _ram_nbr * 0x2000];
+             },
+             [&](uint16_t idx, byte b) {
+                 _ram[(idx - 0xA000) + _ram_nbr * 0x2000] = b;
+             }}};
     }
 
    private:
-    byte _rom_nbr;
-    std::array<byte, 4 * 0x2000> _ram;
+    int _rom_nbr;
+    std::vector<byte> _ram;
     byte _ram_nbr;
     enum RamRomSelector { Rom = 0, Ram = 1 } _selector;
 };
@@ -162,6 +162,66 @@ class MBC3 : public Cartridge::Controller {
     byte _ram_nbr;
 };
 
+class MBC5 : public Cartridge::Controller {
+   public:
+    MBC5(std::vector<byte>&& data)
+        : Cartridge::Controller(std::move(data)),
+          _rom_nbr(1),
+          _ram(0x80 * 0x2000) {
+        _mem_map = {
+            {"rom_bank_0",
+             0x0000,
+             0x1FFF,
+             [&](uint16_t idx) { return ReadRom(idx); },
+             [&](uint16_t, byte) {
+                 std::cout << "RAM/Timer enable not implmented\n";
+             }},
+            {"rom_bank_0",
+             0x2000,
+             0x2FFF,
+             [&](uint16_t idx) { return ReadRom(idx); },
+             [&](uint16_t, byte b) { _rom_nbr = (_rom_nbr & ~(1 << 9)) | b; }},
+            {"rom_bank_0",
+             0x3000,
+             0x3FFF,
+             [&](uint16_t idx) { return ReadRom(idx); },
+             [&](uint16_t, byte idx) {
+                 _rom_nbr = (_rom_nbr & 0xff) | ((idx & 1) << 9);
+             }},
+            {"rom_bank_switchable",
+             0x4000,
+             0x5FFF,
+             [&](uint16_t idx) {
+                 return ReadRom(idx - 0x4000 + _rom_nbr * 0x4000);
+             },
+             [&](uint16_t, byte b) { _ram_nbr = b & 0xf; }},
+            {"rom_bank_switchable",
+             0x6000,
+             0x7FFF,
+             [&](uint16_t idx) {
+                 return ReadRom(idx - 0x4000 + _rom_nbr * 0x4000);
+             },
+             [&](uint16_t, byte) { std::cout << "RTC not implemented\n"; }},
+            {
+                "cartridge_ram",
+                0xA000,
+                0xBFFF,
+                [&](uint16_t idx) {
+                    return _ram[(idx - 0xA000) + _ram_nbr * 0x2000];
+                },
+                [&](uint16_t idx, byte b) {
+                    _ram[(idx - 0xA000) + _ram_nbr * 0x2000] = b;
+                },
+
+            }};
+    }
+
+   private:
+    int _rom_nbr;
+    std::vector<byte> _ram;
+    byte _ram_nbr;
+};
+
 Cartridge::Cartridge(std::string filename) {
     std::vector<byte> data;
     std::ifstream file(filename, std::ios::in | std::ios::binary);
@@ -178,10 +238,24 @@ Cartridge::Cartridge(std::string filename) {
             _ctrl = std::make_unique<Raw>(std::move(data));
             break;
         case 0x01:
+        case 0x02:
+        case 0x03:
             _ctrl = std::make_unique<MBC1>(std::move(data));
             break;
+        case 0x0F:
+        case 0x10:
+        case 0x11:
+        case 0x12:
         case 0x13:
             _ctrl = std::make_unique<MBC3>(std::move(data));
+            break;
+        case 0x19:
+        case 0x1A:
+        case 0x1B:
+        case 0x1C:
+        case 0x1D:
+        case 0x1E:
+            _ctrl = std::make_unique<MBC5>(std::move(data));
             break;
     }
 }

@@ -86,7 +86,6 @@ class WaveOutput : public sf::SoundStream {
 
     void set_length(byte x) { _length.set_len((256 - x) * 1000 / 256); }
 
-
     void set_level(byte x) {
         _level = x;
         _wav.set_level((x >> 5) & 3);
@@ -150,6 +149,12 @@ class Sound {
 
     void set_mixer(byte x) {
         _wav.setVolume((GetBit(x, 6) || GetBit(x, 2)) ? 100 : 0);
+    }
+
+    ~Sound() {
+        _tone1.stop();
+        _tone2.stop();
+        _wav.stop();
     }
 
    private:

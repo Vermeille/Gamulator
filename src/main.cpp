@@ -32,6 +32,11 @@ void segv_handler(int) {
     exit(1);
 }
 
+void sigint_handler(int) {
+    std::cout << "END\n";
+    z80_ptr->poweroff();
+}
+
 int main(int argc, char** argv) {
     if (argc <= 1) {
         return EXIT_FAILURE;
@@ -71,6 +76,10 @@ int main(int argc, char** argv) {
     struct sigaction action;
     action.sa_handler = segv_handler;
     sigaction(SIGSEGV, &action, nullptr);
+
+    struct sigaction int_action;
+    int_action.sa_handler = sigint_handler;
+    sigaction(SIGINT, &int_action, nullptr);
     processor.Process();
     return 0;
 }

@@ -20,7 +20,8 @@ Z80::Z80(AddressBus& addr, Video& v, LinkCable& lk, Timer& timer, Sound& snd)
       _snd(snd),
       _timer(timer),
       _interrupts(uint8_t(0xFF)),
-      _halted(false) {
+      _halted(false),
+      _power(true) {
     Register<F>::Set(this, uint8_t(0xB0));
     Register<A>::Set(this, uint8_t(0x01));
     Register<C>::Set(this, uint8_t(0x13));
@@ -583,7 +584,7 @@ int Z80::RunCBOpcode(byte op) { return _cb_instr[op]->Do(this); }
 
 void Z80::Process() {
     int cycles = 0;
-    while (true) {
+    while (_power) {
         if (!halted()) {
             if (cycles == 0) {
                 cinstr << "0x" << std::hex << _pc.u << "\t"

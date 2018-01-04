@@ -10,6 +10,7 @@
 class Cartridge {
    public:
     Cartridge(std::string filename);
+    ~Cartridge() { _ctrl->SaveRam(_game_name + ".save"); }
 
     struct Addr {
         std::string _name;
@@ -21,16 +22,24 @@ class Cartridge {
 
     class Controller {
        public:
-        Controller(std::vector<byte>&& data) : _data(std::move(data)) {}
+        Controller(std::vector<byte>&& data, int ram_size)
+            : _data(std::move(data)), _ram(ram_size) {}
+
+        virtual ~Controller() = default;
 
         const Addr& Find(uint16_t idx) const { return FindAddr(idx); }
         byte Read(uint16_t idx) const { return FindAddr(idx)._get(idx); }
 
         void Write(uint16_t idx, byte v) { FindAddr(idx)._set(idx, v); }
+        void LoadRam(const std::string& filename);
+        void SaveRam(const std::string& filename);
 
        protected:
         byte ReadRom(uint32_t idx) const { return _data[idx]; }
         void WriteRom(uint32_t idx, byte x) { _data[idx] = x; }
+
+        byte ReadRam(uint32_t idx) const { return _ram[idx]; }
+        void WriteRam(uint32_t idx, byte x) { _ram[idx] = x; }
 
         std::vector<Addr> _mem_map;
 
@@ -38,6 +47,7 @@ class Cartridge {
         const Addr& FindAddr(uint16_t) const;
 
         std::vector<byte> _data;
+        std::vector<byte> _ram;
     };
 
     const Addr& Find(uint16_t index) const { return _ctrl->Find(index); }
@@ -45,5 +55,7 @@ class Cartridge {
     void Write(uint16_t index, byte val) { _ctrl->Write(index, val); }
 
    private:
+    std::vector<byte> LoadGame(const std::string& filename);
     std::unique_ptr<Controller> _ctrl;
+    std::string _game_name;
 };

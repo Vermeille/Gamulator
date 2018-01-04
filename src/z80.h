@@ -56,6 +56,8 @@ class Z80 {
     bool halted() const { return _halted; }
     void set_halt(bool x) { _halted = x; }
 
+    void poweroff() { _power = false; }
+
     Data16 pc() const { return _pc; }
     Data16& pc() { return _pc; }
     AddressBus& addr() { return _addr; }
@@ -91,4 +93,5 @@ class Z80 {
     static std::array<std::unique_ptr<InstrBase>, 256> _cb_instr;
     byte _interrupts;
     bool _halted;
+    bool _power;
 };

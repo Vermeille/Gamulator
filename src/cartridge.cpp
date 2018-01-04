@@ -21,7 +21,8 @@ void Error(uint16_t idx) {
 
 class Raw : public Cartridge::Controller {
    public:
-    Raw(std::vector<byte>&& data) : Cartridge::Controller(std::move(data)) {
+    Raw(std::vector<byte>&& data)
+        : Cartridge::Controller(std::move(data), 0xC000 - 0xA000) {
         _mem_map = {
             {"rom_bank_0",
              0x0000,
@@ -40,22 +41,18 @@ class Raw : public Cartridge::Controller {
             {"ram_bank",
              0xA000,
              0xBFFF,
-             [&](uint16_t idx) { return _ram[idx - 0xA000]; },
-             [&](uint16_t idx, byte b) { _ram[idx - 0xA000] = b; }},
+             [&](uint16_t idx) { return ReadRam(idx - 0xA000); },
+             [&](uint16_t idx, byte b) { WriteRam(idx - 0xA000, b); }},
         };
     }
-
-   private:
-    std::array<byte, 0xC000 - 0xA000> _ram;
 };
 
 class MBC1 : public Cartridge::Controller {
    public:
     MBC1(std::vector<byte>&& data)
-        : Cartridge::Controller(std::move(data)),
+        : Cartridge::Controller(std::move(data), 4 * 0x2000),
           _rom_nbr(1),
-          _ram_nbr(0),
-          _ram(4 * 0x2000) {
+          _ram_nbr(0) {
         _mem_map = {
             {"rom_bank_0",
              0x0000,
@@ -97,16 +94,15 @@ class MBC1 : public Cartridge::Controller {
              0xA000,
              0xBFFF,
              [&](uint16_t idx) {
-                 return _ram[(idx - 0xA000) + _ram_nbr * 0x2000];
+                 return ReadRam((idx - 0xA000) + _ram_nbr * 0x2000);
              },
              [&](uint16_t idx, byte b) {
-                 _ram[(idx - 0xA000) + _ram_nbr * 0x2000] = b;
+                 WriteRam((idx - 0xA000) + _ram_nbr * 0x2000, b);
              }}};
     }
 
    private:
     int _rom_nbr;
-    std::vector<byte> _ram;
     byte _ram_nbr;
     enum RamRomSelector { Rom = 0, Ram = 1 } _selector;
 };
@@ -114,7 +110,9 @@ class MBC1 : public Cartridge::Controller {
 class MBC3 : public Cartridge::Controller {
    public:
     MBC3(std::vector<byte>&& data)
-        : Cartridge::Controller(std::move(data)), _rom_nbr(1) {
+        : Cartridge::Controller(std::move(data), 4 * 0x2000 + 48),
+          _rom_nbr(1),
+          _rtc_select(RTCSelect::None) {
         _mem_map = {
             {"rom_bank_0",
              0x0000,
@@ -134,7 +132,14 @@ class MBC3 : public Cartridge::Controller {
              [&](uint16_t idx) {
                  return ReadRom(idx - 0x4000 + _rom_nbr * 0x4000);
              },
-             [&](uint16_t, byte b) { _ram_nbr = b & 0b11; }},
+             [&](uint16_t, byte b) {
+                 if (b < 4) {
+                     _ram_nbr = b & 0b11;
+                     _rtc_select = RTCSelect::None;
+                 } else {
+                     _rtc_select = RTCSelect(b);
+                 }
+             }},
             {"rom_bank_switchable",
              0x6000,
              0x7FFF,
@@ -146,28 +151,52 @@ class MBC3 : public Cartridge::Controller {
                 "cartridge_ram",
                 0xA000,
                 0xBFFF,
-                [&](uint16_t idx) {
-                    return _ram[(idx - 0xA000) + _ram_nbr * 0x2000];
+                [&](uint16_t idx) -> byte {
+                    if (_rtc_select == RTCSelect::None) {
+                        return ReadRam((idx - 0xA000) + _ram_nbr * 0x2000);
+                    } else {
+                        std::time_t now = std::time(nullptr);
+                        std::tm* time = std::localtime(&now);
+                        switch (_rtc_select) {
+                            case RTCSelect::Sec:
+                                return time->tm_sec;
+                            case RTCSelect::Min:
+                                return time->tm_min;
+                            case RTCSelect::Hour:
+                                return time->tm_hour;
+                            case RTCSelect::DayLow:
+                                return time->tm_mday & 0xFF;
+                            case RTCSelect::DayHigh:
+                                return GetBit(time->tm_mday, 9);
+                            default:
+                                return 0xFF;
+                        }
+                    }
                 },
                 [&](uint16_t idx, byte b) {
-                    _ram[(idx - 0xA000) + _ram_nbr * 0x2000] = b;
+                    WriteRam((idx - 0xA000) + _ram_nbr * 0x2000, b);
                 },
 
             }};
     }
 
    private:
+    enum class RTCSelect {
+        None = 0,
+        Sec = 0x8,
+        Min = 0x9,
+        Hour = 0xA,
+        DayLow = 0xB,
+        DayHigh = 0xC
+    } _rtc_select;
     byte _rom_nbr;
-    std::array<byte, 4 * 0x2000> _ram;
     byte _ram_nbr;
 };
 
 class MBC5 : public Cartridge::Controller {
    public:
     MBC5(std::vector<byte>&& data)
-        : Cartridge::Controller(std::move(data)),
-          _rom_nbr(1),
-          _ram(0x80 * 0x2000) {
+        : Cartridge::Controller(std::move(data), 0x80 * 0x2000), _rom_nbr(1) {
         _mem_map = {
             {"rom_bank_0",
              0x0000,
@@ -207,10 +236,10 @@ class MBC5 : public Cartridge::Controller {
                 0xA000,
                 0xBFFF,
                 [&](uint16_t idx) {
-                    return _ram[(idx - 0xA000) + _ram_nbr * 0x2000];
+                    return ReadRam((idx - 0xA000) + _ram_nbr * 0x2000);
                 },
                 [&](uint16_t idx, byte b) {
-                    _ram[(idx - 0xA000) + _ram_nbr * 0x2000] = b;
+                    WriteRam((idx - 0xA000) + _ram_nbr * 0x2000, b);
                 },
 
             }};
@@ -218,18 +247,29 @@ class MBC5 : public Cartridge::Controller {
 
    private:
     int _rom_nbr;
-    std::vector<byte> _ram;
     byte _ram_nbr;
 };
 
-Cartridge::Cartridge(std::string filename) {
+std::vector<byte> Cartridge::LoadGame(const std::string& filename) {
     std::vector<byte> data;
     std::ifstream file(filename, std::ios::in | std::ios::binary);
-    while (file.good()) {
-        data.push_back(file.get());
+    while (true) {
+        auto x = file.get();
+        if (!file.good()) {
+            break;
+        }
+        data.push_back(x);
     }
-    std::cout << "Game is " << reinterpret_cast<char*>(&data[0x134])
-              << " size=" << std::hex << data.size() << std::endl;
+    return data;
+}
+
+Cartridge::Cartridge(std::string filename) {
+    auto data = LoadGame(filename);
+    _game_name = std::string(reinterpret_cast<char*>(&data[0x134]));
+    std::replace(_game_name.begin(), _game_name.end(), ' ', '_');
+
+    std::cout << "Game is " << _game_name << " size=" << std::hex << data.size()
+              << std::endl;
     int mbc = data[0x147];
     std::cout << "CARTRIDGE TYPE: " << std::hex << int(mbc) << "\n";
 
@@ -258,6 +298,7 @@ Cartridge::Cartridge(std::string filename) {
             _ctrl = std::make_unique<MBC5>(std::move(data));
             break;
     }
+    _ctrl->LoadRam(_game_name + ".save");
 }
 
 const Cartridge::Addr& Cartridge::Controller::FindAddr(uint16_t addr) const {
@@ -281,4 +322,26 @@ const Cartridge::Addr& Cartridge::Controller::FindAddr(uint16_t addr) const {
             b = m + 1;
         }
     }
+}
+
+void Cartridge::Controller::LoadRam(const std::string& filename) {
+    std::ifstream file(filename, std::ios::in | std::ios::binary);
+    if (!file) {
+        return;
+    }
+
+    file.read(reinterpret_cast<char*>(&_ram[0]), _ram.size());
+    if (!file.eof()) {
+        std::cerr << "Invalid save file: size does not match\n";
+        exit(1);
+    }
+}
+
+void Cartridge::Controller::SaveRam(const std::string& filename) {
+    std::ofstream file(filename, std::ios::out | std::ios::binary);
+    if (!file) {
+        return;
+    }
+
+    file.write(reinterpret_cast<char*>(&_ram[0]), _ram.size());
 }

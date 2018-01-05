@@ -54,7 +54,6 @@ int Sweep::Process() {
         } else {
             _f = ((1 << n) * _f) / ((1 << n) + 1);
         }
-        std::cout << std::dec << _f << "\n";
     }
     --_count;
     return _f;

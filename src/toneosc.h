@@ -12,7 +12,6 @@ class ToneOsc : public sf::SoundStream {
 
     byte sweep() const { return 0x80 | _sweep_cache; }
     void set_sweep(byte x) {
-        std::cout << "SET SWEEP: " << std::hex << int(x) << "\n";
         _sweep_cache = x;
         _osc.sweep().set_time((((int(x) >> 4) & 7) * 1000) / 128);
         _osc.sweep().set_direction(!GetBit(x, 3));

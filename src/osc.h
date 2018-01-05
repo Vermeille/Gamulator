@@ -9,12 +9,7 @@
 class Sweep {
    public:
     Sweep() : _nb(0) {}
-    void set_time(int ms) {
-        std::cout << std::dec << "SWEEP TIME: " << ms << "ms\n";
-        _count = _sweep_count = ms * 44100 / 1000;
-        _count = 0;
-        std::cout << _sweep_count << " SAMPLES\n";
-    }
+    void set_time(int ms) { _count = _sweep_count = ms * 44100 / 1000; }
     void set_direction(bool increasing) { _ascending = increasing; }
     void set_nb_of_shifts(int n) { _nb = n; }
 

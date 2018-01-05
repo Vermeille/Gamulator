@@ -84,13 +84,26 @@ void Video::NewFrame() {
     }
 }
 
+int8_t Video::GetTilePix(Data8 tile, int32_t y, int32_t x) {
+    int32_t addr = 0;
+    if (_ctrl.tile_data_mode() == 0) {
+        addr = 0x9000 + tile.s * 16 + y * 2;
+    } else {
+        addr = 0x8000 + tile.u * 16 + y * 2;
+    }
+
+    int8_t l = (_vram[addr - 0x8000].u >> (7 - x)) & 1;
+    int8_t h = (_vram[addr + 1 - 0x8000].u >> (7 - x)) & 1;
+    return (h << 1) | l;
+}
+
 void Video::RenderBg(int line) {
     const int y = (line + _scroll_y) % 256;
     auto pixs = reinterpret_cast<sf::Color*>(&_pixels[line * 160 * 4]);
 
     for (int px_num = 0; px_num < 160; ++px_num) {
         const int x = (px_num + _scroll_x) % 256;
-        Data8 tile = bg_tilemap()[(x / 8) + (y / 8) * 32];
+        Data8 tile = bg_tilemap((x / 8) + (y / 8) * 32);
         int color = GetTilePix(tile, y % 8, x % 8);
 
         pixs[px_num] = _bg_palette.GetColor(color);
@@ -106,7 +119,7 @@ void Video::RenderWindow(int line) {
         if (y_win < 0 || x_win < 0) {
             continue;
         }
-        Data8 tile = win_tilemap()[(x_win / 8) + (y_win / 8) * 32];
+        Data8 tile = win_tilemap((x_win / 8) + (y_win / 8) * 32);
         int color = GetTilePix(tile, y_win % 8, x_win % 8);
 
         pixs[x] = _bg_palette.GetColor(color);
@@ -125,5 +138,7 @@ void Video::Render(int line) {
         RenderWindow(line);
     }
 
-    _sprites.Render(line);
+    if (_ctrl.sprite_display_enable()) {
+        _sprites.Render(line);
+    }
 }

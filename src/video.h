@@ -83,25 +83,17 @@ class Video {
     void Clock();
 
    private:
-    const Data8* bg_tilemap() const {
-        return &_vram[(_ctrl.bg_tile_map_mode() ? 0x9C00u : 0x9800u) - 0x8000u];
+    Data8 bg_tilemap(int tile_nbr) const {
+        return _vram[tile_nbr +
+                     ((_ctrl.bg_tile_map_mode() ? 0x9C00 : 0x9800) - 0x8000)];
     }
 
-    const Data8* win_tilemap() const {
-        return &_vram[(_ctrl.win_tile_map() ? 0x9C00u : 0x9800u) - 0x8000u];
+    Data8 win_tilemap(int tile_nbr) const {
+        return _vram[tile_nbr +
+                     ((_ctrl.win_tile_map() ? 0x9C00 : 0x9800) - 0x8000)];
     }
-    int8_t GetTilePix(Data8 tile, int32_t y, int32_t x) {
-        uint32_t addr = 0;
-        if (_ctrl.tile_data_mode()) {
-            addr = 0x8000 + tile.u * 16 + y * 2;
-        } else {
-            addr = 0x9000 + tile.s * 16 + y * 2;
-        }
 
-        int8_t l = (_vram[addr - 0x8000].u >> (7 - x)) & 1;
-        int8_t h = (_vram[addr + 1 - 0x8000].u >> (7 - x)) & 1;
-        return (h << 1) | l;
-    }
+    int8_t GetTilePix(Data8 tile, int32_t y, int32_t x);
 
     void NewFrame();
     void Render(int line);

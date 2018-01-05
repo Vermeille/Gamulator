@@ -1,7 +1,9 @@
 from typing import Iterator
 from addr import Addr
 
+
 class Instr:
+
     def __init__(self, addr: str, code, is_interrupt) -> None:
         self.addr = addr
         self.iaddr = int(addr, 16)
@@ -32,19 +34,10 @@ class Instr:
         return self._is_interrupt
 
     def pretty_code(self, code: str) -> str:
-        if code.startswith('call'):
+        if (code.startswith('call') or code.startswith('jp') or
+                code.startswith('jr')) and 'HL' not in code:
             instr = code.split()[0]
-            addr = code.split()[1].split('/')[0]
-            code = instr + " " + Addr.get(addr)
-        elif code.startswith('jp'):
-            instr = code.split()[0]
-            addr = code.split()[1].split('/')[0]
-            if addr.startswith('0x'):
-                code = instr + " " + Addr.get(addr)
-        elif code.startswith('jr'):
-            instr = code.split()[0]
-            iaddr = int(code.split()[1].split('/')[2])
-            code = instr + " " + Addr.get(hex(self.iaddr + iaddr + 2))
+            code = instr + " " + Addr.get(self.extract_addr())
 
         if '[' in code:
             b = code.index('[') + 1
@@ -57,6 +50,14 @@ class Instr:
                 code = code[:b] + Addr.get(hex(0xFF00 + iaddr)) + code[e:]
 
         return code
+
+    def extract_addr(self):
+        code = self.code
+        if code.startswith('call') or code.startswith('jp'):
+            return code.split()[1].split('/')[0]
+        elif code.startswith('jr'):
+            iaddr = int(code.split()[1].split('/')[2])
+            return hex(self.iaddr + iaddr + 2)
 
 
 def instrs(filepath: str) -> Iterator[Instr]:
@@ -73,7 +74,9 @@ def instrs(filepath: str) -> Iterator[Instr]:
             elif l.startswith('INT'):
                 yield Instr(l.split()[1], 'INT', is_interrupt=True)
 
+
 class CallTracker:
+
     def __init__(self) -> None:
         self.prev = Instr('0x0', '', False)
 
@@ -91,7 +94,9 @@ class CallTracker:
         addr = addr[:addr.index('/')]
         return int(addr, 16)
 
+
 class RstTracker:
+
     def __init__(self) -> None:
         self.prev = Instr('0x0', '', False)
 
@@ -110,6 +115,7 @@ class RstTracker:
 
 
 class FunCallTracker:
+
     def __init__(self) -> None:
         self.call_tracker = CallTracker()
         self.rst_tracker = RstTracker()
@@ -120,7 +126,9 @@ class FunCallTracker:
         hap = self.rst_tracker.happened(instr) or hap
         return hap
 
+
 class RetTracker:
+
     def __init__(self) -> None:
         self.prev = Instr('0x0', '', False)
 
@@ -135,7 +143,9 @@ class RetTracker:
     def is_ret(self, i: Instr) -> bool:
         return i.code.startswith('ret')
 
+
 class Stack:
+
     def __init__(self, init_addr: str) -> None:
         self.stack = [init_addr]
         self.call_tracker = FunCallTracker()
@@ -150,7 +160,9 @@ class Stack:
     def current_frame(self):
         return self.stack[-1]
 
+
 class CPU:
+
     def __init__(self):
         self.instr = None
         self.stack = Stack('0x100')

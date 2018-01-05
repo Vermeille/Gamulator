@@ -47,6 +47,9 @@ class Program:
             print("." * (len(self.stack) - 1) + Addr.get(instr.addr) + ':\t' +
                   instr.code)
 
+        if instr.iaddr in Addr.jp_to_fun:
+            self.stack[-1] = instr.extract_addr()
+
     def show(self) -> None:
         for k, v in self.funs.items():
             print('-------' + Addr.get(k))
@@ -64,20 +67,16 @@ def reconstruct_functions(trace_file: str) -> Program:
     f = Program(debug=False)
     f.push('0x100')
     cpu = CPU()
-    try:
-        for instr in cpu.execute(trace_file):
-            if ret.happened(instr):
-                f.pop()
+    for instr in cpu.execute(trace_file):
+        if ret.happened(instr):
+            f.pop()
 
-            if call.happened(instr):
-                f.push(instr.addr)
+        if call.happened(instr):
+            f.push(instr.addr)
 
-            f.log(instr)
+        f.log(instr)
 
-    except:
-        pass
-    finally:
-        return f
+    return f
 
 
 if __name__ == '__main__':

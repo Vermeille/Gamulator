@@ -40,6 +40,7 @@ class MemSym:
 class Addr:
     symbols = [] # type: List[MemSym]
     as_ret = [] # type: List[int]
+    jp_to_fun = [] # type: List[int]
 
     @classmethod
     def init(cls, path: str):
@@ -86,6 +87,8 @@ class Addr:
                     bisect.insort(cls.symbols, m)
                 elif l.startswith('force-ret'):
                     cls.as_ret.append(int(l.split()[1], 16))
+                elif l.startswith('jp-to-fun'):
+                    cls.jp_to_fun.append(int(l.split()[1], 16))
 
     @classmethod
     def get(cls, addr: str) -> str:

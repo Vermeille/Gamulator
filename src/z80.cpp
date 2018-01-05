@@ -591,9 +591,8 @@ void Z80::Process() {
                        << int(_addr.Get(_pc.u).u) << "\t";
                 PrintInstr(_addr.Get(_pc.u).u, this);
                 cycles = RunOpcode(_addr.Get(_pc.u).u);
-            } else {
-                --cycles;
             }
+            --cycles;
         }
 
         _vid.Clock();

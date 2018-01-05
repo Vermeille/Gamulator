@@ -517,7 +517,7 @@ struct ADD {
 
         p->set_zero_f((res & 0xFF) == 0);
         p->set_sub_f(false);
-        p->set_hcarry_f(((a.u & 0xf) + (b.u & 0xf)) >> 4);  // FIXME
+        p->set_hcarry_f(((a.u & 0xf) + (b.u & 0xf)) >> 4);
         p->set_carry_f(res >> 8);
 
         A::Set(p, uint8_t(res & 0xFF));
@@ -985,7 +985,7 @@ struct JP_Impl {
         Data16 jmp = A::GetW(p);
         if (Test::Do(p)) {
             Z80::Register<Z80::PC>::SetW(p, jmp);
-            return 8 + A::cycles;  // FIXME: should be 4 for jp HL
+            return A::cycles ? 16 : 4;  // Handle JP HL
         } else {
             p->next_opcode();
             return 12;
@@ -1102,7 +1102,15 @@ struct LDw {
     static inline int Do(Z80* proc) {
         A::SetW(proc, B::GetW(proc));
         proc->next_opcode();
-        return 12;
+        if (std::is_same<A, Z80::Register<Z80::SP>>::value &&
+            std::is_same<B, Z80::Register<Z80::HL>>::value) {
+            return 8;
+        } else if (std::is_same<A, ToAddr<NextWord>>::value &&
+                   std::is_same<B, Z80::Register<Z80::SP>>::value) {
+            return 20;
+        } else {
+            return 4 + A::cycles + B::cycles;
+        }
     }
     static void Print(Z80* p) {
         cinstr << "ld ";
@@ -1167,7 +1175,7 @@ struct LDD<A, ToAddr<B>> {
         --addr.u;
         B::SetW(proc, addr);
         proc->next_opcode();
-        return 8;
+        return 8 + B::cycles;
     }
     static void Print(Z80* p) {
         cinstr << "ldd ";

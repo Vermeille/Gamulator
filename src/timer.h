@@ -25,7 +25,7 @@ class Timer {
         }
 
         ++tima_cycle_cnt_;
-        if (tima_cycle_cnt_ >= kCpuFreq / TimerFreq()) {
+        if (tima_cycle_cnt_ >= TimerFreq()) {
             tima_cycle_cnt_ = 0;
             ++tima_.u;
             if (tima_.u == 0) {
@@ -53,13 +53,13 @@ class Timer {
     int TimerFreq() const {
         switch (tac_.u & 0b11) {
             case 0:
-                return 4096u;
+                return 1024;
             case 1:
-                return 262144u;
+                return 16;
             case 2:
-                return 65536u;
+                return 64;
             case 3:
-                return 16384u;
+                return 256;
         }
         assert(false);
     }

@@ -318,7 +318,7 @@ std::vector<byte> Cartridge::LoadGame(const std::string& filename) {
     return data;
 }
 
-Cartridge::Cartridge(std::string filename) {
+Cartridge::Cartridge(std::string filename) : _has_battery(false) {
     auto data = LoadGame(filename);
     _game_name = std::string(reinterpret_cast<char*>(&data[0x134]));
     std::replace(_game_name.begin(), _game_name.end(), ' ', '_');
@@ -336,6 +336,7 @@ Cartridge::Cartridge(std::string filename) {
         case 0x02:
         case 0x03:
             _ctrl = std::make_unique<MBC1>(std::move(data));
+            _has_battery = mbc == 0x3;
             break;
         case 0x0F:
         case 0x10:
@@ -343,6 +344,7 @@ Cartridge::Cartridge(std::string filename) {
         case 0x12:
         case 0x13:
             _ctrl = std::make_unique<MBC3>(std::move(data));
+            _has_battery = ((mbc & 1) ^ ((mbc >> 1) & 1)) == 0;
             break;
         case 0x19:
         case 0x1A:
@@ -351,9 +353,15 @@ Cartridge::Cartridge(std::string filename) {
         case 0x1D:
         case 0x1E:
             _ctrl = std::make_unique<MBC5>(std::move(data));
+            _has_battery = mbc == 0x1B || mbc == 0x1E;
             break;
     }
-    _ctrl->LoadRam(_game_name + ".save");
+
+    std::cout << "ROM SIZE: " << _ctrl->rom_size() << "\n";
+    std::cout << "ROM BANKS: " << _ctrl->rom_banks() << "\n";
+    if (_has_battery) {
+        _ctrl->LoadRam(_game_name + ".save");
+    }
 }
 
 const Cartridge::Addr& Cartridge::Controller::FindAddr(uint16_t addr) const {

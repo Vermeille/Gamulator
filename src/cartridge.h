@@ -10,7 +10,11 @@
 class Cartridge {
    public:
     Cartridge(std::string filename);
-    ~Cartridge() { _ctrl->SaveRam(_game_name + ".save"); }
+    ~Cartridge() {
+        if (_has_battery) {
+            _ctrl->SaveRam(_game_name + ".save");
+        }
+    }
 
     struct Addr {
         std::string _name;
@@ -33,6 +37,8 @@ class Cartridge {
         void Write(uint16_t idx, byte v) { FindAddr(idx)._set(idx, v); }
         void LoadRam(const std::string& filename);
         void SaveRam(const std::string& filename);
+        int rom_size() const { return _data.size(); }
+        int rom_banks() const { return rom_size() / 0x4000; }
 
        protected:
         byte& Rom(uint32_t idx) { return _data[idx]; }
@@ -58,4 +64,5 @@ class Cartridge {
     std::vector<byte> LoadGame(const std::string& filename);
     std::unique_ptr<Controller> _ctrl;
     std::string _game_name;
+    bool _has_battery;
 };

@@ -111,8 +111,8 @@ class Video {
     std::array<Data8, 0xFEA0 - 0xFE00> _oam;
     byte _scroll_x;
     byte _scroll_y;
-    byte _wy;
-    byte _wx;
+    int _wy;
+    int _wx;
     Palette _bg_palette;
     SpritesTable _sprites;
 

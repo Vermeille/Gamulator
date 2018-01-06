@@ -295,7 +295,7 @@ Z80::Z80(AddressBus& addr, Video& v, LinkCable& lk, Timer& timer, Sound& snd)
     RegisterOpcode<0xE5, Instr<PUSH, Register<HL>, void>>();
     RegisterOpcode<0xE6, Instr<AND, Register<A>, NextByte>>();
     RegisterOpcode<0xE7, Instr<RST20, void, void>>();
-    RegisterOpcode<0xE8, Instr<ADDO, Register<SP>, NextByte>>();  // FIXME
+    RegisterOpcode<0xE8, Instr<ADDO, Register<SP>, NextByte>>();
     RegisterOpcode<0xE9, Instr<JP, Register<HL>, void>>();
     RegisterOpcode<0xEA, Instr<LD, ToAddr<NextWord>, Register<A>>>();
     // 0xEB xxxxxxxxxxxxxxxxxxxxxxxxxxx

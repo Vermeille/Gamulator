@@ -42,6 +42,7 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
+    bool mute = false;
     std::string gamefile;
     for (int i = 1; i < argc; ++i) {
         if (argv[i][0] != '-') {
@@ -56,6 +57,8 @@ int main(int argc, char** argv) {
             serial.enabled = true;
         } else if (argv[i] == std::string("--errors")) {
             cerror.enabled = true;
+        } else if (argv[i] == std::string("--mute")) {
+            mute = true;
         } else if (argv[i][0] == '-') {
             std::cerr << "unknown option " << argv[i] << "\n";
             return 1;
@@ -65,7 +68,7 @@ int main(int argc, char** argv) {
         }
     }
     Video v;
-    Sound s;
+    Sound s(mute);
     Cartridge card(gamefile);
     LinkCable lk;
     Keypad kp;

@@ -1281,7 +1281,11 @@ struct RST_Impl {
         ToAddr<Z80::Register<Z80::SP>>::SetW(p, p->pc());
 
         Z80::Register<Z80::PC>::SetW(p, Addr);
-        return 16;
+        if (HasOpcode) {
+            return 16;
+        } else {
+            return 20;
+        }
     }
     static void Print(Z80*) {
         cinstr << "rst 0x" << std::hex << Addr << std::endl;

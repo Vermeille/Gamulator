@@ -65,9 +65,18 @@ class WaveOutput : public sf::SoundStream {
     byte _hi_cache;
 };
 
+class Noise {
+    LengthCounter _length;
+    Envelope _env;
+};
+
 class Sound {
    public:
-    Sound() {
+    Sound(bool mute = false) : _mute(mute) {
+        if (mute) {
+            return;
+        }
+
         _tone1.play();
         _tone2.play();
         _wav.play();
@@ -82,6 +91,9 @@ class Sound {
         _wav.setVolume((GetBit(x, 6) || GetBit(x, 2)) ? 100 : 0);
     }
 
+    byte on_off() const { return _on_off | 0x70; }
+    void set_on_off(byte x) { _on_off = x; }
+
     ~Sound() {
         _tone1.stop();
         _tone2.stop();
@@ -89,6 +101,8 @@ class Sound {
     }
 
    private:
+    bool _mute;
+    byte _on_off;
     WaveOutput _wav;
     ToneOsc _tone1;
     ToneOsc _tone2;

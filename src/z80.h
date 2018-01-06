@@ -69,7 +69,7 @@ class Z80 {
     template <unsigned char Opcode, class Inst>
     void RegisterCBOpcode();
 
-    void ProcessInterrupts();
+    int ProcessInterrupts();
 
     friend struct NextWord;
     friend struct NextByte;

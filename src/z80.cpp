@@ -613,14 +613,14 @@ void Z80::Process() {
         if (_lk.transferred()) {
             _addr.Set(0xFF0F, SetBit(_addr.Get(0xFF0F).u, 3));
         }
-        ProcessInterrupts();
+        cycles += ProcessInterrupts();
     }
 }
 
 void Z80::PrintInstr(uint8_t op, Z80* p) { _instr[op]->Print(p); }
 void Z80::PrintCBInstr(uint8_t op, Z80* p) { _cb_instr[op]->Print(p); }
 
-void Z80::ProcessInterrupts() {
+int Z80::ProcessInterrupts() {
     byte ints = _addr.Get(0xFFFF).u & _addr.Get(0xFF0F).u & _interrupts;
 
     set_halt(halted() && !_addr.Get(0xFF0F).u);
@@ -630,21 +630,22 @@ void Z80::ProcessInterrupts() {
     if (ints & 1) {
         cevent << "VBlank int!\n";
         _addr.Set(0xFF0F, ClearBit(_addr.Get(0xFF0F).u, 0));
-        RST40<void, void>::Do(this);
+        return RST40<void, void>::Do(this);
     } else if (ints & 0b10) {
         cevent << "STAT int!\n";
         _addr.Set(0xFF0F, ClearBit(_addr.Get(0xFF0F).u, 1));
-        RST48<void, void>::Do(this);
+        return RST48<void, void>::Do(this);
     } else if (ints & 0b100) {
         _addr.Set(0xFF0F, ClearBit(_addr.Get(0xFF0F).u, 2));
-        RST50<void, void>::Do(this);
+        return RST50<void, void>::Do(this);
     } else if (ints & 0b1000) {
         _addr.Set(0xFF0F, ClearBit(_addr.Get(0xFF0F).u, 3));
-        RST58<void, void>::Do(this);
+        return RST58<void, void>::Do(this);
     } else if (ints & 0b10000) {
         _addr.Set(0xFF0F, ClearBit(_addr.Get(0xFF0F).u, 4));
-        RST60<void, void>::Do(this);
+        return RST60<void, void>::Do(this);
     }
+    return 0;
 }
 
 template <unsigned char Opcode, class Inst>

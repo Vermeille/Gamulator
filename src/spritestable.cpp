@@ -29,7 +29,7 @@ const SpriteAttributes& SpritesTable::GetSpriteAttr(int sprite_id) const {
 }
 
 void SpritesTable::Render(int line) {
-    auto pixs = _video.render_zone().pixs();
+    auto pixs = _video.render_zone().pixs(line);
     const int height = _video.lcdc().sprite_size() ? 16 : 8;
     for (uint32_t i = 0; i < 40; ++i) {
         for (int y = 0; y < height; ++y) {
@@ -53,9 +53,11 @@ void SpritesTable::Render(int line) {
                 if (x + sprite.x_pos() < 0 || x + sprite.x_pos() >= 160) {
                     continue;
                 }
-                pixs[line * 160 + x + sprite.x_pos()] =
-                    sprite.obj1_palette() ? _obj1_palette.GetColor(color)
-                                          : _obj0_palette.GetColor(color);
+                auto color_val = sprite.obj1_palette()
+                                     ? _obj1_palette.GetColor(color)
+                                     : _obj0_palette.GetColor(color);
+                pixs[x + sprite.x_pos()] =
+                    make_pixel(color_val, sprite.under_bg() ? 1 : 5);
             }
         }
     }

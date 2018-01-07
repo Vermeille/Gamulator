@@ -74,7 +74,7 @@ void RenderZone::Render() {
             }
         }
 
-        _texture.update(reinterpret_cast<uint8_t*>(_pixels.get()));
+        _texture.update(reinterpret_cast<uint8_t*>(&_pixels[0]));
         sf::Sprite sp;
         sp.setScale(4, 4);
         sp.setTexture(_texture);
@@ -82,6 +82,7 @@ void RenderZone::Render() {
         _window.display();
         _window.clear(sf::Color::Blue);
     }
+    std::fill(_z.begin(), _z.end(), 0);
 }
 
 int8_t Video::GetTilePix(Data8 tile, int32_t y, int32_t x) {
@@ -99,20 +100,21 @@ int8_t Video::GetTilePix(Data8 tile, int32_t y, int32_t x) {
 
 void Video::RenderBg(int line) {
     const int y = (line + _scroll_y) % 256;
-    auto pixs = &_render.pixs()[line * 160];
+    auto pixs = _render.pixs(line);
 
     for (int px_num = 0; px_num < 160; ++px_num) {
         const int x = (px_num + _scroll_x) % 256;
         Data8 tile = bg_tilemap((x / 8) + (y / 8) * 32);
         int color = GetTilePix(tile, y % 8, x % 8);
 
-        pixs[px_num] = _bg_palette.GetColor(color);
+        pixs[px_num] =
+            make_pixel(_bg_palette.GetColor(color), color == 0 ? 0 : 2);
     }
 }
 
 void Video::RenderWindow(int line) {
     const int y = line;
-    auto pixs = &_render.pixs()[line * 160];
+    auto pixs = _render.pixs(line);
     for (int x = 0; x < 160; ++x) {
         int y_win = y - _wy;
         int x_win = x - _wx;
@@ -122,7 +124,7 @@ void Video::RenderWindow(int line) {
         Data8 tile = win_tilemap((x_win / 8) + (y_win / 8) * 32);
         int color = GetTilePix(tile, y_win % 8, x_win % 8);
 
-        pixs[x] = _bg_palette.GetColor(color);
+        pixs[x] = make_pixel(_bg_palette.GetColor(color), 4);
     }
 }
 

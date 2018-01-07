@@ -19,6 +19,7 @@ class SpriteAttributes {
     bool y_flip() const { return _flags & (1 << 6); }
     bool x_flip() const { return _flags & (1 << 5); }
     bool obj1_palette() const { return _flags & (1 << 4); }
+    bool under_bg() const { return _flags & (1 << 7); }
 
    private:
     byte _y_pos;

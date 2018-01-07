@@ -14,17 +14,30 @@
 #include "spritestable.h"
 #include "utils.h"
 
+class RenderZone {
+   public:
+    RenderZone()
+        : _window(sf::VideoMode(160 * 4, 144 * 4), "Gameboy"),
+          _pixels(new sf::Color[160 * 144]) {
+        _texture.create(160, 144);
+        _window.setFramerateLimit(60);
+    }
+
+    void Render();
+
+    sf::Color* pixs() const { return _pixels.get(); }
+
+   private:
+    std::unique_ptr<sf::Color[]> _pixels;
+    sf::Texture _texture;
+    sf::RenderWindow _window;
+};
+
 class Video {
    public:
-    Video()
-        : _pixels(new sf::Uint8[160 * 144 * 4]),
-          _clock(0),
-          _sprites(_pixels.get(), *this),
-          _window(sf::VideoMode(160 * 4, 144 * 4), "Gameboy") {
-        _texture.create(160, 144);
+    Video() : _clock(0), _sprites(*this) {
         _oam.fill(uint8_t(0));
         _vram.fill(uint8_t(0));
-        _window.setFramerateLimit(60);
     }
 
     void set_lcdc(byte b) {
@@ -82,6 +95,8 @@ class Video {
 
     void Clock();
 
+    RenderZone& render_zone() { return _render; }
+
    private:
     Data8 bg_tilemap(int tile_nbr) const {
         return _vram[tile_nbr +
@@ -95,13 +110,11 @@ class Video {
 
     int8_t GetTilePix(Data8 tile, int32_t y, int32_t x);
 
-    void NewFrame();
     void Render(int line);
 
     void RenderBg(int line);
     void RenderWindow(int line);
 
-    std::unique_ptr<sf::Uint8[]> _pixels;
     int32_t _clock = 0;
     int32_t _line = 0;
     int32_t _ly_comp;
@@ -118,6 +131,5 @@ class Video {
 
     byte _vblank_int;
     byte _hblank_int;
-    sf::RenderWindow _window;
-    sf::Texture _texture;
+    RenderZone _render;
 };

@@ -29,8 +29,7 @@ class SpriteAttributes {
 
 class SpritesTable {
    public:
-    SpritesTable(sf::Uint8* pixels, Video& video)
-        : _pixels(pixels), _video(video) {}
+    SpritesTable(Video& video) : _video(video) {}
 
     void Render(int line);
 
@@ -48,6 +47,5 @@ class SpritesTable {
 
     Palette _obj0_palette;
     Palette _obj1_palette;
-    sf::Uint8* _pixels;
     Video& _video;
 };

@@ -45,14 +45,14 @@ void Video::Clock() {
         _clock = 0;
     }
     if (mode == LCDStatus::VBLANK && _line == 154) {
-        NewFrame();
+        _render.Render();
         _line = 0;
         _clock = 0;
         _state.set_mode(LCDStatus::SEARCH_OAM);
     }
 }
 
-void Video::NewFrame() {
+void RenderZone::Render() {
     static int skip = 0;
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) &&
         sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
@@ -74,7 +74,7 @@ void Video::NewFrame() {
             }
         }
 
-        _texture.update(_pixels.get());
+        _texture.update(reinterpret_cast<uint8_t*>(_pixels.get()));
         sf::Sprite sp;
         sp.setScale(4, 4);
         sp.setTexture(_texture);
@@ -99,7 +99,7 @@ int8_t Video::GetTilePix(Data8 tile, int32_t y, int32_t x) {
 
 void Video::RenderBg(int line) {
     const int y = (line + _scroll_y) % 256;
-    auto pixs = reinterpret_cast<sf::Color*>(&_pixels[line * 160 * 4]);
+    auto pixs = &_render.pixs()[line * 160];
 
     for (int px_num = 0; px_num < 160; ++px_num) {
         const int x = (px_num + _scroll_x) % 256;
@@ -112,7 +112,7 @@ void Video::RenderBg(int line) {
 
 void Video::RenderWindow(int line) {
     const int y = line;
-    auto pixs = reinterpret_cast<sf::Color*>(&_pixels[line * 160 * 4]);
+    auto pixs = &_render.pixs()[line * 160];
     for (int x = 0; x < 160; ++x) {
         int y_win = y - _wy;
         int x_win = x - _wx;

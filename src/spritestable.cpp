@@ -29,7 +29,7 @@ const SpriteAttributes& SpritesTable::GetSpriteAttr(int sprite_id) const {
 }
 
 void SpritesTable::Render(int line) {
-    auto pixs = reinterpret_cast<sf::Color*>(&_pixels[0]);
+    auto pixs = _video.render_zone().pixs();
     const int height = _video.lcdc().sprite_size() ? 16 : 8;
     for (uint32_t i = 0; i < 40; ++i) {
         for (int y = 0; y < height; ++y) {

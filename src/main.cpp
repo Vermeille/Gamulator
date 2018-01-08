@@ -15,7 +15,9 @@
 #include "addressbus.h"
 #include "cartridge.h"
 #include "keypad.h"
+#include "link.h"
 #include "sound.h"
+#include "timer.h"
 #include "video.h"
 #include "z80.h"
 

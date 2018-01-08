@@ -10,7 +10,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <boost/format.hpp>
+#include <cassert>
 #include <iostream>
 #include <stdexcept>
 

@@ -3,11 +3,14 @@
 #include <cstdint>
 #include <functional>
 #include "addressbus.h"
-#include "sound.h"
-#include "video.h"
 
 typedef unsigned char byte;
 typedef uint16_t word;
+
+class Sound;
+class Video;
+class LinkCable;
+class Timer;
 
 class Z80 {
    public:
@@ -85,7 +88,7 @@ class Z80 {
     Data16 _sp;
     Data16 _pc;
     AddressBus& _addr;
-    LinkCable _lk;
+    LinkCable& _lk;
     Video& _vid;
     Sound& _snd;
     Timer& _timer;

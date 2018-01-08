@@ -8,6 +8,7 @@
  ** Last update 2014-02-20 16:22 vermeille
  */
 
+#include <algorithm>
 #include <iostream>
 #include <stdexcept>
 

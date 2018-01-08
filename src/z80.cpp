@@ -7,6 +7,9 @@
 #include <vector>
 
 #include "instruction.hpp"
+#include "link.h"
+#include "timer.h"
+#include "video.h"
 
 std::array<std::unique_ptr<Z80::InstrBase>, 256> Z80::_instr;
 std::array<std::unique_ptr<Z80::InstrBase>, 256> Z80::_cb_instr;

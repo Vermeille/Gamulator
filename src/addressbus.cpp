@@ -8,12 +8,19 @@
  ** Last update mer. 02 mai 2012 13:14:28 CEST Guillaume "Vermeille" Sanchez
  */
 
+#include <algorithm>
 #include <cassert>
 #include <iostream>
 #include <stdexcept>
 
 #include "addressbus.h"
+#include "cartridge.h"
+#include "keypad.h"
+#include "link.h"
+#include "sound.h"
+#include "timer.h"
 #include "utils.h"
+#include "video.h"
 #include "z80.h"
 
 byte NotImplementedGet(uint16_t idx) {
@@ -299,9 +306,7 @@ const AddressBus::Addr& AddressBus::FindAddr(uint16_t addr) const {
     uint32_t e = _mem_map.size();
 
     while (true) {
-        if (b == e) {
-            assert(false);
-        }
+        assert(b != e);
 
         uint32_t m = (b + e) / 2;
 

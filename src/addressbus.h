@@ -1,15 +1,17 @@
 #pragma once
 
 #include <functional>
+#include <vector>
 
 #include "addressable.h"
-#include "cartridge.h"
-#include "keypad.h"
-#include "link.h"
-#include "sound.h"
-#include "timer.h"
 #include "utils.h"
-#include "video.h"
+
+class Keypad;
+class Cartridge;
+class Video;
+class LinkCable;
+class Timer;
+class Sound;
 
 class AddressBus {
    public:
@@ -40,7 +42,7 @@ class AddressBus {
     Cartridge& _card;
     Video& _vid;
     LinkCable& _lk;
-    Keypad _kp;
+    Keypad& _kp;
     Timer& _timer;
     Sound& _snd;
     std::array<Data8, 0xFFFF - 0xFF80> _hram;

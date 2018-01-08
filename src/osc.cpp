@@ -1,5 +1,6 @@
 #include "osc.h"
 
+#include <cassert>
 #include <limits>
 
 int16_t* Osc::GenSamples() {

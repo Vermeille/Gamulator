@@ -4,7 +4,6 @@
 #include <iostream>
 #include <memory>
 #include <vector>
-#include "addressable.h"
 #include "utils.h"
 
 class Cartridge {

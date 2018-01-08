@@ -1,14 +1,16 @@
 # Gamulator
 
-This is a gameboy emulator. Well, this is *intended* to be a gameboy emulator.
-For now, it's just not working.
+This emulator, except for some quircks, _kinda_ works.
 
-- The screen is kinda half emulated but display isn't working except on test
-  ROMs
-- There's no sound
-- No joypad
+- Kirby Dream Land works fine (the game can be finished)
+- Castlevania II seems to be okay except for some mysterious sprite flickering
+- The Legend of Zelda: Link's Awakening seems fine
+- Pokémon blue freezes when you go to a Pokémon Center for some unknown reason
 
-I test it with Tetris.
+Tests:
+
+- Blargg's `cpu_instr`, `instr_timing`, `int_time` are okay
+- Mooneye-gb's MBC1 ram/rom, are okay
 
 # Debug it
 

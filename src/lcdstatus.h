@@ -14,16 +14,14 @@ class LCDStatus {
     void set_oam_interrupt(bool b) { SetStateBit(5, b); }
     bool oam_interrupt() const { return GetStateBit(5); }
 
-    void set_vblank(bool b) {
-        std::cout << "vblank interrupt " << b << std::endl;
-        SetStateBit(4, b);
-    }
+    void set_vblank(bool b) { SetStateBit(4, b); }
     bool vblank() const { return GetStateBit(4); }
 
     void set_hblank(bool b) { SetStateBit(3, b); }
     bool hblank() const { return GetStateBit(3); }
 
     bool coincidence() const { return GetStateBit(2); }
+    void set_coincidence(bool b) { SetStateBit(2, b); }
 
     enum Mode { HBLANK = 0, VBLANK = 1, SEARCH_OAM = 2, TRANSFER = 3 };
 

@@ -152,8 +152,14 @@ class Video {
 
     bool vblank_int() const { return _vblank_int; }
     bool stat_int() const {
-        return ((_ly_comp == _line) & _state.coincidence()) |
-               (_hblank_int & _state.hblank());
+        byte mode = _state.mode();
+        return (_state.lyc_interrupt() && _state.coincidence()) ||
+               (_phase_changed &&  // just on phase change
+                ((mode == LCDStatus::HBLANK && _state.hblank()) ||
+                 ((mode == LCDStatus::VBLANK && _state.vblank()) ||
+                  // we want OAM in line 144 too
+                  (_line == 144 && _state.oam_interrupt())) ||
+                 (mode == LCDStatus::SEARCH_OAM && _state.oam_interrupt())));
     }
 
     byte bg_palette() const { return _bg_palette.Get(); }
@@ -200,8 +206,8 @@ class Video {
     int _wx;
     Palette _bg_palette;
     SpritesTable _sprites;
+    bool _phase_changed;
 
     byte _vblank_int;
-    byte _hblank_int;
     RenderZone _render;
 };

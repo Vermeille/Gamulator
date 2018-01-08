@@ -56,8 +56,8 @@ void SpritesTable::Render(int line) {
                 auto color_val = sprite.obj1_palette()
                                      ? _obj1_palette.GetColor(color)
                                      : _obj0_palette.GetColor(color);
-                pixs[x + sprite.x_pos()] =
-                    make_pixel(color_val, sprite.under_bg() ? 1 : 5);
+                pixs[x + sprite.x_pos()].Render(
+                    make_pixel(color_val, sprite.under_bg() ? 1 : 5));
             }
         }
     }

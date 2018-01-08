@@ -605,6 +605,7 @@ void Z80::Process() {
         }
         if (_vid.stat_int()) {
             _addr.Set(0xFF0F, SetBit(_addr.Get(0xFF0F).u, 1));
+            cevent << "STAT INT SET\n";
         }
         if (_timer.tima_int()) {
             cevent << "TIMA INT\n";
@@ -623,7 +624,7 @@ void Z80::PrintCBInstr(uint8_t op, Z80* p) { _cb_instr[op]->Print(p); }
 int Z80::ProcessInterrupts() {
     byte ints = _addr.Get(0xFFFF).u & _addr.Get(0xFF0F).u & _interrupts;
 
-    set_halt(halted() && !_addr.Get(0xFF0F).u);
+    set_halt(halted() && !ints);
     if (ints) {
         --_pc.u;
     }

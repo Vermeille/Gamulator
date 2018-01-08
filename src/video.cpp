@@ -20,28 +20,34 @@ void Video::Clock() {
     ++_clock;
     char mode = _state.mode();
     _vblank_int = 0;
-    _hblank_int = 0;
+    _phase_changed = false;
+    _state.set_coincidence(false);
 
     if (mode == LCDStatus::SEARCH_OAM && _clock == 80) {
         _clock = 0;
         _state.set_mode(LCDStatus::TRANSFER);
+        _phase_changed = true;
     } else if (mode == LCDStatus::TRANSFER && _clock == 172) {
         _clock = 0;
         _state.set_mode(LCDStatus::HBLANK);
-        _hblank_int = 1;
+        _phase_changed = true;
     } else if (mode == LCDStatus::HBLANK && _clock == 204) {
         _clock = 0;
         Render(_line);
         ++_line;
+        _state.set_coincidence(_line == _ly_comp);
         if (_line == 144) {
             _state.set_mode(LCDStatus::VBLANK);
+            _phase_changed = true;
             _vblank_int = 1;
             cevent << "vBLANK INT\n";
         } else {
             _state.set_mode(LCDStatus::SEARCH_OAM);
+            _phase_changed = true;
         }
     } else if (mode == LCDStatus::VBLANK && _clock == 456) {
         ++_line;
+        _state.set_coincidence(_line == _ly_comp);
         _clock = 0;
     }
     if (mode == LCDStatus::VBLANK && _line == 154) {
@@ -49,39 +55,27 @@ void Video::Clock() {
         _line = 0;
         _clock = 0;
         _state.set_mode(LCDStatus::SEARCH_OAM);
+        _phase_changed = true;
     }
 }
 
 void RenderZone::Render() {
-    static int skip = 0;
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) &&
-        sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
-        skip = skip ? skip : 8;
-    } else if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl)) {
-        skip = skip ? skip : 2;
-    } else {
-        skip = 1;
-    }
-
-    --skip;
-    if (skip == 0) {
-        sf::Event event;
-        while (_window.pollEvent(event)) {
-            // Request for closing the window
-            if (event.type == sf::Event::Closed) {
-                _window.close();
-                exit(0);
-            }
+    sf::Event event;
+    while (_window.pollEvent(event)) {
+        // Request for closing the window
+        if (event.type == sf::Event::Closed) {
+            _window.close();
+            exit(0);
         }
-
-        _texture.update(reinterpret_cast<uint8_t*>(&_pixels[0]));
-        sf::Sprite sp;
-        sp.setScale(4, 4);
-        sp.setTexture(_texture);
-        _window.draw(sp);
-        _window.display();
-        _window.clear(sf::Color::Blue);
     }
+
+    _texture.update(reinterpret_cast<uint8_t*>(&_pixels[0]));
+    sf::Sprite sp;
+    sp.setScale(4, 4);
+    sp.setTexture(_texture);
+    _window.draw(sp);
+    _window.display();
+    _window.clear(sf::Color::Blue);
     std::fill(_z.begin(), _z.end(), 0);
 }
 
@@ -107,8 +101,8 @@ void Video::RenderBg(int line) {
         Data8 tile = bg_tilemap((x / 8) + (y / 8) * 32);
         int color = GetTilePix(tile, y % 8, x % 8);
 
-        pixs[px_num] =
-            make_pixel(_bg_palette.GetColor(color), color == 0 ? 0 : 2);
+        pixs[px_num].Render(
+            make_pixel(_bg_palette.GetColor(color), color == 0 ? 0 : 2));
     }
 }
 
@@ -124,7 +118,7 @@ void Video::RenderWindow(int line) {
         Data8 tile = win_tilemap((x_win / 8) + (y_win / 8) * 32);
         int color = GetTilePix(tile, y_win % 8, x_win % 8);
 
-        pixs[x] = make_pixel(_bg_palette.GetColor(color), 4);
+        pixs[x].Render(make_pixel(_bg_palette.GetColor(color), color ? 4 : 4));
     }
 }
 

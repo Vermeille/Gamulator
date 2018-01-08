@@ -6,7 +6,7 @@ int16_t* WaveReader::GenSamples() {
         return &_cache[0];
     }
 
-    for (int i = 0; i < _cache.size(); ++i) {
+    for (unsigned int i = 0; i < _cache.size(); ++i) {
         _cache[i] =
             AdjustLevel(NibbleToInt16(NthNibble(_cursor * _data.size() * 2)));
         _cursor += _freq / 44100.;

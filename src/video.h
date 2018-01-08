@@ -94,10 +94,10 @@ class RenderZone {
     }
 
    private:
+    sf::RenderWindow _window;
     std::vector<sf::Color> _pixels;
     std::vector<byte> _z;
     sf::Texture _texture;
-    sf::RenderWindow _window;
 };
 
 template <class P, class Z>
@@ -113,8 +113,10 @@ class Video {
     }
 
     void set_lcdc(byte b) {
-        cevent << "LCDC: " << std::hex << int(b) << "\n";
         _ctrl.Set(b);
+        cevent << "LCDC: " << std::hex << int(b)
+               << "BG MAP: " << _ctrl.bg_tile_map_mode()
+               << " DATA: " << _ctrl.tile_data_mode() << "\n";
     }
     LCDCtrl lcdc() const { return _ctrl; }
 

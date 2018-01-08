@@ -62,6 +62,7 @@ class Timer {
                 return 256;
         }
         assert(false);
+        return 0;
     }
 
     Data8 cnt_;

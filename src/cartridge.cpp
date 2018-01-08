@@ -139,8 +139,8 @@ class MBC3 : public Cartridge::Controller {
    public:
     MBC3(std::vector<byte>&& data)
         : Cartridge::Controller(std::move(data), 4 * 0x2000 + 48),
-          _rom_nbr(1),
-          _rtc_select(RTCSelect::None) {
+          _rtc_select(RTCSelect::None),
+          _rom_nbr(1) {
         _mem_map = {{"rom_bank_0",
                      0x0000,
                      0x1FFF,
@@ -208,9 +208,7 @@ class MBC3 : public Cartridge::Controller {
                             if (_rtc_select == RTCSelect::None) {
                                 Ram((idx - 0xA000) + _ram_nbr * 0x2000) = b;
                             } else {
-                                std::cout << "WRITE RTC\n";
-                                std::time_t now = std::time(nullptr);
-                                std::tm* time = std::localtime(&now);
+                                std::cout << "RTC NOT IMPLEMENTED\n";
                                 switch (_rtc_select) {
                                     case RTCSelect::Sec:
                                     case RTCSelect::Min:
@@ -253,7 +251,9 @@ class MBC3 : public Cartridge::Controller {
         Hour = 0xA,
         DayLow = 0xB,
         DayHigh = 0xC
-    } _rtc_select;
+    };
+
+    RTCSelect _rtc_select;
     byte _rom_nbr;
     byte _ram_nbr;
 };

@@ -27,6 +27,7 @@ add_executable(emu
     wavereader.cpp
     waveoutput.h
     sweep.h
+    renderzone.h
     )
 
 target_link_libraries(emu sfml-window sfml-system sfml-graphics sfml-audio)

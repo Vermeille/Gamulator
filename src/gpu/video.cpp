@@ -123,6 +123,22 @@ void Video::RenderWindow(int line) {
 }
 
 void Video::Render(int line) {
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
+        std::cout << "MODE: " << (_ctrl.tile_data_mode() ? "U" : "S") << "\n";
+        for (int i = 0; i < 32; ++i) {
+            for (int j = 0; j < 32; ++j) {
+                if (_ctrl.tile_data_mode()) {
+                    std::cout << std::dec << int(bg_tilemap(i * 32 + j).u)
+                              << "\t";
+                } else {
+                    std::cout << std::dec << int(bg_tilemap(i * 32 + j).s)
+                              << "\t";
+                }
+            }
+            std::cout << "\n";
+        }
+        std::cout << "=============\n";
+    }
     const int y = line;
     cdebug << "Y COORD: " << y << " " << _ctrl.bg_display() << "\n";
     assert(y < 144);

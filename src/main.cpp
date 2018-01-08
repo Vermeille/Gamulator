@@ -13,12 +13,12 @@
 #include <iostream>
 
 #include "addressbus.h"
+#include "apu/sound.h"
 #include "cartridge.h"
+#include "gpu/video.h"
 #include "keypad.h"
 #include "link.h"
-#include "sound.h"
 #include "timer.h"
-#include "video.h"
 #include "z80.h"
 
 static Z80* z80_ptr;

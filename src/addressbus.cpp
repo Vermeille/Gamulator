@@ -14,13 +14,13 @@
 #include <stdexcept>
 
 #include "addressbus.h"
+#include "apu/sound.h"
 #include "cartridge.h"
+#include "gpu/video.h"
 #include "keypad.h"
 #include "link.h"
-#include "sound.h"
 #include "timer.h"
 #include "utils.h"
-#include "video.h"
 #include "z80.h"
 
 byte NotImplementedGet(uint16_t idx) {

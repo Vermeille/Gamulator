@@ -50,4 +50,5 @@ class Sound {
     WaveOutput _wav;
     ToneOsc _tone1;
     ToneOsc _tone2;
+    Noise _noise;
 };

@@ -1,4 +1,4 @@
-set(CMAKE_CXX_FLAGS "-std=c++14 -Wall -Wextra -Werror=return-type -O3 -march=native -DNDEBUG")
+set(CMAKE_CXX_FLAGS "-std=c++14 -Wall -Wextra -Werror=return-type -O3 -g3 -march=native -DNDEBUG")
 
 add_executable(emu
     gpu/video.cpp
@@ -10,6 +10,7 @@ add_executable(emu
     gpu/spritestable.h
     gpu/spritestable.cpp
     gpu/renderzone.h
+    gpu/renderzone.cpp
 
     apu/sound.h
     apu/osc.h
@@ -28,10 +29,12 @@ add_executable(emu
     cartridge.h
     main.cpp
     z80.cpp
+    z80_no_instr.cpp
     z80.h
     utils.h
     )
 
-target_link_libraries(emu sfml-window sfml-system sfml-graphics sfml-audio)
+target_link_libraries(emu sfml-window sfml-system sfml-audio
+    -lSDL2)
 
 target_include_directories(emu PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

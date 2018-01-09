@@ -1,6 +1,8 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
+
+#include "color.h"
 #include "utils.h"
 
 class Palette {
@@ -18,9 +20,9 @@ class Palette {
         _colors[3] = (b >> 6) & 0b11;
     }
 
-    sf::Color GetColor(int idx) const { return kColors[_colors[idx]]; }
+    Color GetColor(int idx) const { return kColors[_colors[idx]]; }
 
    private:
     byte _colors[4];
-    static const sf::Color kColors[];
+    static const Color kColors[];
 };

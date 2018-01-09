@@ -1,8 +1,18 @@
 #pragma once
 
+#include <functional>
 #include <vector>
 
+#include <SDL2/SDL.h>
 #include <SFML/Graphics.hpp>
+
+#include "color.h"
+#include "utils.h"
+
+inline void InitVideo() {
+    SDL_Init(SDL_INIT_VIDEO);
+    atexit(SDL_Quit);
+}
 
 class RenderZone {
    public:
@@ -38,7 +48,7 @@ class RenderZone {
 
     class PixelIterator {
        public:
-        PixelIterator(sf::Color* color, byte* prio) : _color(color), _z(prio) {}
+        PixelIterator(Color* color, byte* prio) : _color(color), _z(prio) {}
 
         void operator++() {
             ++_color;
@@ -59,20 +69,15 @@ class RenderZone {
         }
 
         auto operator[](int i) const {
-            return Pixel<sf::Color&, byte&>(_color[i], _z[i]);
+            return Pixel<Color&, byte&>(_color[i], _z[i]);
         }
 
        private:
-        sf::Color* _color;
+        Color* _color;
         byte* _z;
     };
 
-    RenderZone()
-        : _window(sf::VideoMode(160 * 4, 144 * 4), "Gameboy"),
-          _pixels(160 * 144),
-          _z(160 * 144) {
-        _texture.create(160, 144);
-        _window.setFramerateLimit(60);
+    RenderZone() : _tx(_win), _pixels(160 * 144), _z(160 * 144) {
         std::fill(_z.begin(), _z.end(), 0);
     }
 
@@ -83,10 +88,56 @@ class RenderZone {
     }
 
    private:
-    sf::RenderWindow _window;
-    std::vector<sf::Color> _pixels;
+    struct Window {
+        Window()
+            : _win(SDL_CreateWindow("Gameboy",
+                                    SDL_WINDOWPOS_UNDEFINED,
+                                    SDL_WINDOWPOS_UNDEFINED,
+                                    160 * 4,
+                                    144 * 4,
+                                    0)),
+              _renderer(SDL_CreateRenderer(_win, -1, 0)) {}
+        ~Window() {
+            SDL_DestroyRenderer(_renderer);
+            SDL_DestroyWindow(_win);
+        }
+        operator SDL_Window*() const { return _win; }
+        operator SDL_Renderer*() const { return _renderer; }
+
+        void Clear() { SDL_RenderClear(_renderer); }
+        void Display() { SDL_RenderPresent(_renderer); }
+
+       private:
+        SDL_Window* _win;
+        SDL_Renderer* _renderer;
+    };
+
+    struct Texture {
+        Texture(Window& w)
+            : _texture(SDL_CreateTexture(w,
+                                         SDL_PIXELFORMAT_RGBA8888,
+                                         SDL_TEXTUREACCESS_STREAMING,
+                                         160,
+                                         144)) {}
+
+        ~Texture() { SDL_DestroyTexture(_texture); }
+
+        operator SDL_Texture*() const { return _texture; }
+
+        void Update(Color* c) {
+            SDL_UpdateTexture(_texture, nullptr, c, 160 * sizeof(Color));
+        }
+
+        void Draw(Window& w) { SDL_RenderCopy(w, _texture, nullptr, nullptr); }
+
+       private:
+        SDL_Texture* _texture;
+    };
+
+    Window _win;
+    Texture _tx;
+    std::vector<Color> _pixels;
     std::vector<byte> _z;
-    sf::Texture _texture;
 };
 
 template <class P, class Z>

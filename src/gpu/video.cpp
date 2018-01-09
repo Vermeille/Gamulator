@@ -59,26 +59,6 @@ void Video::Clock() {
     }
 }
 
-void RenderZone::Render() {
-    sf::Event event;
-    while (_window.pollEvent(event)) {
-        // Request for closing the window
-        if (event.type == sf::Event::Closed) {
-            _window.close();
-            exit(0);
-        }
-    }
-
-    _texture.update(reinterpret_cast<uint8_t*>(&_pixels[0]));
-    sf::Sprite sp;
-    sp.setScale(4, 4);
-    sp.setTexture(_texture);
-    _window.draw(sp);
-    _window.display();
-    _window.clear(sf::Color::Blue);
-    std::fill(_z.begin(), _z.end(), 0);
-}
-
 int8_t Video::GetTilePix(Data8 tile, int32_t y, int32_t x) {
     int32_t addr = 0;
     if (_ctrl.tile_data_mode() == 0) {
@@ -123,22 +103,6 @@ void Video::RenderWindow(int line) {
 }
 
 void Video::Render(int line) {
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
-        std::cout << "MODE: " << (_ctrl.tile_data_mode() ? "U" : "S") << "\n";
-        for (int i = 0; i < 32; ++i) {
-            for (int j = 0; j < 32; ++j) {
-                if (_ctrl.tile_data_mode()) {
-                    std::cout << std::dec << int(bg_tilemap(i * 32 + j).u)
-                              << "\t";
-                } else {
-                    std::cout << std::dec << int(bg_tilemap(i * 32 + j).s)
-                              << "\t";
-                }
-            }
-            std::cout << "\n";
-        }
-        std::cout << "=============\n";
-    }
     const int y = line;
     cdebug << "Y COORD: " << y << " " << _ctrl.bg_display() << "\n";
     assert(y < 144);

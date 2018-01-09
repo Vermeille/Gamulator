@@ -69,6 +69,8 @@ int main(int argc, char** argv) {
             return 1;
         }
     }
+    InitVideo();
+
     Video v;
     Sound s(mute);
     Cartridge card(gamefile);

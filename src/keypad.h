@@ -2,7 +2,7 @@
 
 #include <cassert>
 
-#include <SDL2/SDL.h>
+#include <sdl.h>
 
 class Keypad {
    public:

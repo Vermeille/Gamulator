@@ -3,7 +3,7 @@
 #include <functional>
 #include <vector>
 
-#include <SDL2/SDL.h>
+#include <sdl.h>
 
 #include "color.h"
 #include "utils.h"

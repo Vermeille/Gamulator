@@ -1,6 +1,4 @@
-set(CMAKE_CXX_FLAGS "-std=c++14 -Wall -Wextra -Werror=return-type -O3 -g3 -march=native -DNDEBUG")
-
-add_executable(emu
+set(SRC
     gpu/video.cpp
     gpu/video.h
     gpu/lcdc.h
@@ -32,8 +30,17 @@ add_executable(emu
     z80_no_instr.cpp
     z80.h
     utils.h
+    sdl.h
     )
 
-target_link_libraries(emu SDL2)
+if (${CMAKE_CXX_COMPILER} EQUAL emcc)
+    add_executable(emujs ${SRC})
+    target_include_directories(emujs PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+    set_target_properties(emujs PROPERTIES COMPILE_FLAGS "-std=c++14 -Wall -Wextra -Werror=return-type -O3 -DNDEBUG -s USE_SDL=2")
+else()
+    add_executable(emu ${SRC})
+    target_link_libraries(emu SDL2)
+    target_include_directories(emu PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+    set_target_properties(emu PROPERTIES COMPILE_FLAGS "-std=c++14 -Wall -Wextra -Werror=return-type -O3 -g3 -march=native -DNDEBUG")
+endif()
 
-target_include_directories(emu PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

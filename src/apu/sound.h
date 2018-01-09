@@ -3,9 +3,8 @@
 #include <algorithm>
 #include <vector>
 
-#include <SDL2/SDL.h>
-
 #include "chunk.h"
+#include "sdl.h"
 #include "toneosc.h"
 #include "utils.h"
 #include "waveoutput.h"

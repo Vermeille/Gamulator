@@ -8,7 +8,6 @@
  ** Last update mer. 02 mai 2012 13:14:28 CEST Guillaume "Vermeille" Sanchez
  */
 
-#include <algorithm>
 #include <cassert>
 #include <iostream>
 #include <stdexcept>

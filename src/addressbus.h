@@ -4,7 +4,6 @@
 #include <functional>
 #include <vector>
 
-#include "addressable.h"
 #include "utils.h"
 
 class Keypad;

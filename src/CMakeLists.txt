@@ -20,7 +20,6 @@ set(SRC
     apu/waveoutput.h
     apu/sweep.h
 
-    addressable.h
     addressbus.cpp
     addressbus.h
     cartridge.cpp

@@ -8,7 +8,7 @@ int16_t* Osc::GenSamples() {
         std::fill(_data.begin(), _data.end(), 0);
         return &_data[0];
     }
-    for (int i = 0; i < 1024; ++i) {
+    for (unsigned int i = 0; i < _data.size(); ++i) {
         _freq = _sweep.Process();
         const int period_len = FreqToNbSamples(_freq);
         const int phase_len = GetPhaseLen(period_len);

@@ -4,7 +4,6 @@
 #include <vector>
 
 #include <SDL2/SDL.h>
-#include <SFML/Graphics.hpp>
 
 #include "color.h"
 #include "utils.h"

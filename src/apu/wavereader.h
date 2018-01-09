@@ -9,7 +9,7 @@
 
 class WaveReader {
    public:
-    WaveReader() : _active(true), _freq(440), _cache(1024) {}
+    WaveReader() : _active(true), _freq(440), _cache(2048) {}
 
     int16_t* GenSamples();
 

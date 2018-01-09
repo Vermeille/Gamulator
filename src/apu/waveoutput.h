@@ -1,13 +1,11 @@
 #pragma once
 
-#include <SFML/Audio.hpp>
-
+#include "chunk.h"
 #include "lengthcounter.h"
 #include "wavereader.h"
 
-class WaveOutput : public sf::SoundStream {
+class WaveOutput {
    public:
-    WaveOutput() { initialize(1, 44100); }
     void set_active(byte x) { _wav.set_active((x & (1 << 7)) != 0); }
     bool active() const { return _wav.active() << 7; }
 
@@ -38,10 +36,7 @@ class WaveOutput : public sf::SoundStream {
     void Write(uint16_t addr, byte x) { _wav.Write(addr, x); }
     byte Read(uint16_t addr) const { return _wav.Read(addr); }
 
-   private:
-    void wav_set_freq() { _wav.set_freq(65536 / (2048 - _freq)); }
-
-    virtual bool onGetData(Chunk& data) override {
+    bool Process(Chunk& data) {
         int16_t* buffer = _wav.GenSamples();
         int nb = _wav.nb_samples();
 
@@ -52,7 +47,8 @@ class WaveOutput : public sf::SoundStream {
         return true;
     }
 
-    virtual void onSeek(sf::Time) override {}
+   private:
+    void wav_set_freq() { _wav.set_freq(65536 / (2048 - _freq)); }
 
     WaveReader _wav;
     LengthCounter _length;

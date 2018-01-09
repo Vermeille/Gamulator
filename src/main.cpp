@@ -70,6 +70,7 @@ int main(int argc, char** argv) {
         }
     }
     InitVideo();
+    InitAudio();
 
     Video v;
     Sound s(mute);

@@ -1,14 +1,13 @@
 #pragma once
 
-#include <SFML/Audio.hpp>
-
+#include "chunk.h"
 #include "envelope.h"
 #include "lengthcounter.h"
 #include "osc.h"
 
-class ToneOsc : public sf::SoundStream {
+class ToneOsc {
    public:
-    ToneOsc() : _freq(440) { initialize(1, 44100); }
+    ToneOsc() : _freq(440) {}
 
     byte sweep() const { return 0x80 | _sweep_cache; }
     void set_sweep(byte x) {
@@ -54,11 +53,7 @@ class ToneOsc : public sf::SoundStream {
         }
     }
 
-   private:
-    void osc_set_freq() { _osc.set_freq(131072 / (2048 - _freq)); }
-    void set_len(int val) { _length.set_len((64 - val) * 1000 / 256); }
-
-    virtual bool onGetData(Chunk& data) override {
+    bool Process(Chunk& data) {
         int16_t* buffer = _osc.GenSamples();
         int samples = _osc.nb_samples();
 
@@ -70,7 +65,9 @@ class ToneOsc : public sf::SoundStream {
         return true;
     }
 
-    virtual void onSeek(sf::Time) override {}
+   private:
+    void osc_set_freq() { _osc.set_freq(131072 / (2048 - _freq)); }
+    void set_len(int val) { _length.set_len((64 - val) * 1000 / 256); }
 
     int _freq;
     Osc _osc;

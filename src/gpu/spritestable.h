@@ -2,8 +2,6 @@
 
 #include "palette.h"
 
-#include <SFML/Graphics.hpp>
-
 class Video;
 
 class SpriteAttributes {

@@ -8,7 +8,7 @@
 
 class Osc {
    public:
-    Osc() : _data(1024) {}
+    Osc() : _data(2048) {}
 
     int FreqToNbSamples(int freq) { return 44100 / freq; }
 

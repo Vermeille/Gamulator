@@ -34,7 +34,6 @@ add_executable(emu
     utils.h
     )
 
-target_link_libraries(emu sfml-window sfml-system sfml-audio
-    -lSDL2)
+target_link_libraries(emu SDL2)
 
 target_include_directories(emu PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

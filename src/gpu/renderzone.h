@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <functional>
 #include <vector>
 
@@ -76,7 +77,11 @@ class RenderZone {
         byte* _z;
     };
 
-    RenderZone() : _tx(_win), _pixels(160 * 144), _z(160 * 144) {
+    RenderZone()
+        : _tx(_win),
+          _pixels(160 * 144),
+          _z(160 * 144),
+          _frame_start(std::chrono::high_resolution_clock::now()) {
         std::fill(_z.begin(), _z.end(), 0);
     }
 
@@ -138,6 +143,7 @@ class RenderZone {
     Texture _tx;
     std::vector<Color> _pixels;
     std::vector<byte> _z;
+    std::chrono::high_resolution_clock::time_point _frame_start;
 };
 
 template <class P, class Z>

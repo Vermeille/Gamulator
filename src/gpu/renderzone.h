@@ -96,7 +96,8 @@ class RenderZone {
                                     160 * 4,
                                     144 * 4,
                                     0)),
-              _renderer(SDL_CreateRenderer(_win, -1, 0)) {}
+              _renderer(
+                  SDL_CreateRenderer(_win, -1, SDL_RENDERER_PRESENTVSYNC)) {}
         ~Window() {
             SDL_DestroyRenderer(_renderer);
             SDL_DestroyWindow(_win);

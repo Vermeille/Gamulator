@@ -78,7 +78,8 @@ class RenderZone {
     };
 
     RenderZone()
-        : _tx(_win),
+        : _max_speed(false),
+          _tx(_win),
           _pixels(160 * 144),
           _z(160 * 144),
           _frame_start(std::chrono::high_resolution_clock::now()) {
@@ -90,6 +91,8 @@ class RenderZone {
     PixelIterator pixs(int line = 0) {
         return PixelIterator(&_pixels[160 * line], &_z[160 * line]);
     }
+
+    void set_maxspeed(bool x) { _max_speed = x; }
 
    private:
     struct Window {
@@ -139,6 +142,7 @@ class RenderZone {
         SDL_Texture* _texture;
     };
 
+    bool _max_speed;
     Window _win;
     Texture _tx;
     std::vector<Color> _pixels;

@@ -79,7 +79,7 @@ int main(int argc, char** argv) {
     Keypad kp;
     Timer timer;
     AddressBus addrbus(card, v, lk, kp, timer, s);
-    Z80 processor(addrbus, v, lk, timer, s);
+    Z80 processor(addrbus, v, lk, timer, s, kp);
     z80_ptr = &processor;
     struct sigaction action;
     action.sa_handler = segv_handler;

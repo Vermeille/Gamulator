@@ -9,7 +9,12 @@
 std::array<std::unique_ptr<Z80::InstrBase>, 256> Z80::_instr;
 std::array<std::unique_ptr<Z80::InstrBase>, 256> Z80::_cb_instr;
 
-Z80::Z80(AddressBus& addr, Video& v, LinkCable& lk, Timer& timer, Sound& snd)
+Z80::Z80(AddressBus& addr,
+         Video& v,
+         LinkCable& lk,
+         Timer& timer,
+         Sound& snd,
+         Keypad& k)
     : _sp(uint16_t(0xFFFE)),
       _pc(uint16_t(0x100)),
       _addr(addr),
@@ -17,6 +22,7 @@ Z80::Z80(AddressBus& addr, Video& v, LinkCable& lk, Timer& timer, Sound& snd)
       _vid(v),
       _snd(snd),
       _timer(timer),
+      _keypad(k),
       _interrupts(uint8_t(0xFF)),
       _halted(false),
       _power(true) {

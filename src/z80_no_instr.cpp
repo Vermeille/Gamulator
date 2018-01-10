@@ -5,12 +5,13 @@
 
 #include "gpu/video.h"
 #include "instruction.hpp"
+#include "keypad.h"
 #include "link.h"
 #include "timer.h"
 
 void Z80::Process() {
     int cycles = 0;
-    while (_power) {
+    while (_power && !_keypad.poweroff()) {
         if (!halted()) {
             if (cycles == 0) {
                 cinstr << "0x" << std::hex << _pc.u << "\t"
@@ -21,6 +22,7 @@ void Z80::Process() {
             --cycles;
         }
 
+        _vid.set_maxspeed(_keypad.max_speed());
         _vid.Clock();
         _lk.Clock();
         _timer.Clock();
@@ -39,6 +41,9 @@ void Z80::Process() {
         }
         if (_lk.transferred()) {
             _addr.Set(0xFF0F, SetBit(_addr.Get(0xFF0F).u, 3));
+        }
+        if (_keypad.pressed()) {
+            _addr.Set(0xFF0F, SetBit(_addr.Get(0xFF0F).u, 4));
         }
         cycles += ProcessInterrupts();
     }

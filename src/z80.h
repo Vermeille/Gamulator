@@ -11,10 +11,16 @@ class Sound;
 class Video;
 class LinkCable;
 class Timer;
+class Keypad;
 
 class Z80 {
    public:
-    Z80(AddressBus& addr, Video& v, LinkCable& lk, Timer& timer, Sound& s);
+    Z80(AddressBus& addr,
+        Video& v,
+        LinkCable& lk,
+        Timer& timer,
+        Sound& s,
+        Keypad& k);
 
     void Process();
 
@@ -92,6 +98,7 @@ class Z80 {
     Video& _vid;
     Sound& _snd;
     Timer& _timer;
+    Keypad& _keypad;
     static std::array<std::unique_ptr<InstrBase>, 256> _instr;
     static std::array<std::unique_ptr<InstrBase>, 256> _cb_instr;
     byte _interrupts;

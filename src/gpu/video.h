@@ -84,6 +84,7 @@ class Video {
     void Clock();
 
     RenderZone& render_zone() { return _render; }
+    void set_maxspeed(bool x) { _render.set_maxspeed(x); }
 
    private:
     Data8 bg_tilemap(int tile_nbr) const {

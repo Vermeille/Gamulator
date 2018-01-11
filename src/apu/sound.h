@@ -161,7 +161,7 @@ class Sound {
     ToneOsc& channel_1() { return _tone1; }
     ToneOsc& channel_2() { return _tone2; }
 
-    void set_mixer(byte x) { _mixer = GetBit(x, 6) || GetBit(x, 2); }
+    void set_mixer(byte x) { _mixer = ; }
 
     byte on_off() const { return _on_off | 0x70; }
     void set_on_off(byte x) { _on_off = x; }
@@ -174,19 +174,23 @@ class Sound {
 
         Chunk c;
         _tone1.Process(c);
-        SDL_MixAudioFormat(stream,
-                           reinterpret_cast<uint8_t*>(c.samples),
-                           AUDIO_S16,
-                           c.sampleCount * 2,
-                           SDL_MIX_MAXVOLUME);
+        if (GetBit(_mixer, 4) || GetBit(_mixer, 0)) {
+            SDL_MixAudioFormat(stream,
+                               reinterpret_cast<uint8_t*>(c.samples),
+                               AUDIO_S16,
+                               c.sampleCount * 2,
+                               SDL_MIX_MAXVOLUME);
+        }
         _tone2.Process(c);
-        SDL_MixAudioFormat(stream,
-                           reinterpret_cast<uint8_t*>(c.samples),
-                           AUDIO_S16,
-                           c.sampleCount * 2,
-                           SDL_MIX_MAXVOLUME);
+        if (GetBit(_mixer, 4) || GetBit(_mixer, 1)) {
+            SDL_MixAudioFormat(stream,
+                               reinterpret_cast<uint8_t*>(c.samples),
+                               AUDIO_S16,
+                               c.sampleCount * 2,
+                               SDL_MIX_MAXVOLUME);
+        }
         _wav.Process(c);
-        if (_mixer) {
+        if (GetBit(_mixer, 6) || GetBit(_mixer, 2)) {
             SDL_MixAudioFormat(stream,
                                reinterpret_cast<uint8_t*>(c.samples),
                                AUDIO_S16,
@@ -194,11 +198,13 @@ class Sound {
                                SDL_MIX_MAXVOLUME);
         }
         _noise.Process(c);
-        SDL_MixAudioFormat(stream,
-                           reinterpret_cast<uint8_t*>(c.samples),
-                           AUDIO_S16,
-                           c.sampleCount * 2,
-                           SDL_MIX_MAXVOLUME);
+        if (GetBit(_mixer, 7) || GetBit(_mixer, 3)) {
+            SDL_MixAudioFormat(stream,
+                               reinterpret_cast<uint8_t*>(c.samples),
+                               AUDIO_S16,
+                               c.sampleCount * 2,
+                               SDL_MIX_MAXVOLUME);
+        }
     }
 
     void static _Run(void* thisptr, uint8_t* stream, int len) {

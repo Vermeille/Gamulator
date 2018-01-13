@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cassert>
+
 #include "chunk.h"
 #include "envelope.h"
 #include "lengthcounter.h"
@@ -7,7 +9,7 @@
 
 class ToneOsc {
    public:
-    ToneOsc() : _freq(440) {}
+    ToneOsc(int samples) : _freq(440), _osc(samples) {}
 
     byte sweep() const { return 0x80 | _sweep_cache; }
     void set_sweep(byte x) {
@@ -54,14 +56,13 @@ class ToneOsc {
     }
 
     bool Process(Chunk& data) {
+        assert(data.sampleCount == _osc.nb_samples());
         int16_t* buffer = _osc.GenSamples();
-        int samples = _osc.nb_samples();
 
-        _length.Process(buffer, samples);
-        _env.Process(buffer, samples);
+        _length.Process(buffer, data.sampleCount);
+        _env.Process(buffer, data.sampleCount);
 
         data.samples = buffer;
-        data.sampleCount = samples;
         return true;
     }
 

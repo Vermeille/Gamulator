@@ -13,7 +13,7 @@ inline void InitAudio() { SDL_InitSubSystem(SDL_INIT_AUDIO); }
 
 class NoiseOsc {
    public:
-    NoiseOsc() : _data(2048), _rnd(53934) {}
+    NoiseOsc(int samples) : _data(samples), _rnd(53934) {}
 
     int16_t* GenSamples() {
         if (_sample_max == 0) {
@@ -84,6 +84,7 @@ class NoiseOsc {
 
 class Noise {
    public:
+    Noise(int samples) : _noise(samples) {}
     void set_len(byte x) {
         x &= 0x3F;
         _length.set_len((64 - x) * 1000 / 256);
@@ -136,7 +137,13 @@ class Noise {
 
 class Sound {
    public:
-    Sound(bool mute = false) : _mute(mute) {
+    Sound(bool mute = false)
+        : _mute(mute),
+          _nb_samples(2048),
+          _wav(_nb_samples),
+          _tone1(_nb_samples),
+          _tone2(_nb_samples),
+          _noise(_nb_samples) {
         if (mute) {
             return;
         }
@@ -147,11 +154,11 @@ class Sound {
         spec.freq = 44100;
         spec.format = AUDIO_S16;
         spec.channels = 1;
-        spec.samples = 4096;
+        spec.samples = _nb_samples * 2;
         spec.callback = Sound::_Run;
         spec.userdata = this;
         _dev = SDL_OpenAudioDevice(nullptr, 0, &spec, nullptr, 0);
-        std::cout << "DEV: " << _dev << "\n";
+        std::cout << "DEV: " << _dev << " SAMPLES: " << spec.samples << "\n";
         std::cout << SDL_GetError() << "\n";
         SDL_PauseAudioDevice(_dev, 0);
     }
@@ -161,7 +168,7 @@ class Sound {
     ToneOsc& channel_1() { return _tone1; }
     ToneOsc& channel_2() { return _tone2; }
 
-    void set_mixer(byte x) { _mixer = ; }
+    void set_mixer(byte x) { _mixer = x; }
 
     byte on_off() const { return _on_off | 0x70; }
     void set_on_off(byte x) { _on_off = x; }
@@ -173,6 +180,7 @@ class Sound {
         SDL_memset(stream, 0, len);
 
         Chunk c;
+        c.sampleCount = len / 2;
         _tone1.Process(c);
         if (GetBit(_mixer, 4) || GetBit(_mixer, 0)) {
             SDL_MixAudioFormat(stream,
@@ -212,6 +220,7 @@ class Sound {
     }
 
     bool _mute;
+    int _nb_samples;
     byte _mixer;
     byte _on_off;
     WaveOutput _wav;

@@ -6,6 +6,8 @@
 
 class WaveOutput {
    public:
+    WaveOutput(int samples) : _wav(samples) {}
+
     void set_active(byte x) { _wav.set_active((x & (1 << 7)) != 0); }
     bool active() const { return _wav.active() << 7; }
 

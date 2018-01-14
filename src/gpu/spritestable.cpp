@@ -32,33 +32,28 @@ void SpritesTable::Render(int line) {
     auto pixs = _video.render_zone().pixs(line);
     const int height = _video.lcdc().sprite_size() ? 16 : 8;
     for (uint32_t i = 0; i < 40; ++i) {
-        for (int y = 0; y < height; ++y) {
-            auto& sprite = GetSpriteAttr(i);
+        auto& sprite = GetSpriteAttr(i);
+        if (sprite.y_pos() > line || sprite.y_pos() + height < line) {
+            continue;
+        }
 
-            if (y + sprite.y_pos() != line) {
+        int y = line - sprite.y_pos();
+
+        for (int x = 0; x < 8; ++x) {
+            int color = GetSpritePix(sprite, y, x);
+
+            if (color == 0) {
                 continue;
             }
 
-            for (int x = 0; x < 8; ++x) {
-                int color = GetSpritePix(sprite, y, x);
-
-                if (color == 0) {
-                    continue;
-                }
-
-                if (y + sprite.y_pos() < 0 || y + sprite.y_pos() >= 144) {
-                    continue;
-                }
-
-                if (x + sprite.x_pos() < 0 || x + sprite.x_pos() >= 160) {
-                    continue;
-                }
-                auto color_val = sprite.obj1_palette()
-                                     ? _obj1_palette.GetColor(color)
-                                     : _obj0_palette.GetColor(color);
-                pixs[x + sprite.x_pos()].Render(
-                    make_pixel(color_val, sprite.under_bg() ? 1 : 5));
+            if (x + sprite.x_pos() < 0 || x + sprite.x_pos() >= 160) {
+                continue;
             }
+            auto color_val = sprite.obj1_palette()
+                                 ? _obj1_palette.GetColor(color)
+                                 : _obj0_palette.GetColor(color);
+            pixs[x + sprite.x_pos()].Render(
+                make_pixel(color_val, sprite.under_bg() ? 1 : 5));
         }
     }
 }

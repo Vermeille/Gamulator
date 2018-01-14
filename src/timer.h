@@ -35,7 +35,10 @@ class Timer {
         }
     }
 
-    void Reset() { cnt_.u = 0; }
+    void Reset() {
+        cnt_.u = 0;
+        tima_cycle_cnt_ = 1;
+    }
     Data8 div() const { return cnt_; }
 
     Data8 tima() const { return tima_; }

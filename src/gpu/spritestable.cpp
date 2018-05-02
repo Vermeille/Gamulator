@@ -33,7 +33,7 @@ void SpritesTable::Render(int line) {
     const int height = _video.lcdc().sprite_size() ? 16 : 8;
     for (uint32_t i = 0; i < 40; ++i) {
         auto& sprite = GetSpriteAttr(i);
-        if (sprite.y_pos() > line || sprite.y_pos() + height < line) {
+        if (sprite.y_pos() > line || sprite.y_pos() + height <= line) {
             continue;
         }
 
@@ -46,7 +46,7 @@ void SpritesTable::Render(int line) {
                 continue;
             }
 
-            if (x + sprite.x_pos() < 0 || x + sprite.x_pos() >= 160) {
+            if (x + sprite.x_pos() < 0 || x + sprite.x_pos() > 160) {
                 continue;
             }
             auto color_val = sprite.obj1_palette()

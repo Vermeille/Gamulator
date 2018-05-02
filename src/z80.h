@@ -71,6 +71,8 @@ class Z80 {
     Data16& pc() { return _pc; }
     AddressBus& addr() { return _addr; }
 
+    void RunOneFrame();
+
    private:
     template <unsigned char Opcode, class Instr>
     void RegisterOpcode();
@@ -104,4 +106,5 @@ class Z80 {
     byte _interrupts;
     bool _halted;
     bool _power;
+    int _cycles;
 };

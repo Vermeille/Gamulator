@@ -12,6 +12,10 @@
 #include <cstdlib>
 #include <iostream>
 
+#ifdef EMSCRIPTEN
+#include <emscripten.h>
+#endif
+
 #include "addressbus.h"
 #include "apu/sound.h"
 #include "cartridge.h"
@@ -38,6 +42,8 @@ void sigint_handler(int) {
     std::cout << "END\n";
     z80_ptr->poweroff();
 }
+
+void Run() { z80_ptr->RunOneFrame(); }
 
 int main(int argc, char** argv) {
     if (argc <= 1) {
@@ -88,6 +94,10 @@ int main(int argc, char** argv) {
     struct sigaction int_action;
     int_action.sa_handler = sigint_handler;
     sigaction(SIGINT, &int_action, nullptr);
+#if 1
     processor.Process();
+#else
+    emscripten_set_main_loop(Run, 60, 1);
+#endif
     return 0;
 }

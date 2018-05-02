@@ -10,16 +10,21 @@
 #include "timer.h"
 
 void Z80::Process() {
-    int cycles = 0;
+    while (_power && !_keypad.poweroff()) {
+        RunOneFrame();
+    }
+}
+
+void Z80::RunOneFrame() {
     while (_power && !_keypad.poweroff()) {
         if (!halted()) {
-            if (cycles == 0) {
+            if (_cycles == 0) {
                 cinstr << "0x" << std::hex << _pc.u << "\t"
                        << int(_addr.Get(_pc.u).u) << "\t";
                 PrintInstr(_addr.Get(_pc.u).u, this);
-                cycles = RunOpcode(_addr.Get(_pc.u).u);
+                _cycles = RunOpcode(_addr.Get(_pc.u).u);
             }
-            --cycles;
+            --_cycles;
         }
 
         _vid.set_maxspeed(_keypad.max_speed());
@@ -30,6 +35,7 @@ void Z80::Process() {
         if (_vid.vblank_int()) {
             _addr.Set(0xFF0F, SetBit(_addr.Get(0xFF0F).u, 0));
             cevent << "VBlank INT SET\n";
+            break;
         }
         if (_vid.stat_int()) {
             _addr.Set(0xFF0F, SetBit(_addr.Get(0xFF0F).u, 1));
@@ -45,7 +51,7 @@ void Z80::Process() {
         if (_keypad.pressed()) {
             _addr.Set(0xFF0F, SetBit(_addr.Get(0xFF0F).u, 4));
         }
-        cycles += ProcessInterrupts();
+        _cycles += ProcessInterrupts();
     }
 }
 

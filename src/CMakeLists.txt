@@ -32,14 +32,15 @@ set(SRC
     sdl.h
     )
 
-if (${CMAKE_CXX_COMPILER} EQUAL emcc)
-    add_executable(emujs ${SRC})
-    target_include_directories(emujs PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-    set_target_properties(emujs PROPERTIES COMPILE_FLAGS "-std=c++14 -Wall -Wextra -Werror=return-type -O3 -DNDEBUG -s USE_SDL=2")
+if ("${MAKE_JS}" STREQUAL "yes")
+    add_executable(emujs.html ${SRC})
+    target_include_directories(emujs.html PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+    set_target_properties(emujs.html PROPERTIES COMPILE_FLAGS "-std=c++14 -Wall -Wextra -Werror=return-type -O3 -DNDEBUG -s USE_WEBGL2=0 -s FORCE_FILESYSTEM=1 -s INVOKE_RUN=0")
+    set_target_properties(emujs.html PROPERTIES LINK_FLAGS " -s USE_SDL=2 -s USE_WEBGL2=0 -s FORCE_FILESYSTEM=1 -s INVOKE_RUN=0")
 else()
     add_executable(emu ${SRC})
     target_link_libraries(emu SDL2)
     target_include_directories(emu PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-    set_target_properties(emu PROPERTIES COMPILE_FLAGS "-std=c++14 -Wall -Wextra -Werror=return-type -O3 -g3 -march=native -DNDEBUG")
+    set_target_properties(emu PROPERTIES COMPILE_FLAGS "-std=c++14 -Wall -Wextra -Werror=return-type -O3 -g3 -march=native")
 endif()
 

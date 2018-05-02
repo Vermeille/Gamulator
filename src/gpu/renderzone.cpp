@@ -4,9 +4,12 @@
 
 void RenderZone::Render() {
     if (!_max_speed) {
+        //*
         std::this_thread::sleep_until(
             _frame_start + std::chrono::nanoseconds(1000000000 / 60));
         _frame_start = std::chrono::high_resolution_clock::now();
+        //*/
+        // SDL_Delay(16);
     }
     _tx.Update(&_pixels[0]);
     _win.Clear();

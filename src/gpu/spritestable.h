@@ -24,7 +24,7 @@ class SpriteAttributes {
     byte _x_pos;
     byte _tileno;
     byte _flags;
-};
+} __attribute__((packed));
 
 class SpritesTable {
    public:
